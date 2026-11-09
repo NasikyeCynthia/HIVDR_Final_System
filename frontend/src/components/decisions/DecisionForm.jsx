@@ -1,0 +1,16 @@
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { decisionService } from '../../services/decisionService.js';
+import usePatientAction from '../../hooks/usePatientAction.js';
+import { formatDate } from '../../utils/format.js';
+import Card from '../common/Card.jsx';
+import FormField from '../common/FormField.jsx';
+import Feedback from '../common/Feedback.jsx';
+export default function DecisionForm({ patient, onSaved }) {
+  const { user } = useAuth();
+  const approval = usePatientAction(onSaved);
+  const implementation = usePatientAction(onSaved);
+  const canImplement = user.role === 'clinician' || (['nurse', 'counsellor'].includes(user.role) && patient.assigned_to === user.id);
+  function approve(event) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); approval.run(() => decisionService.approve(patient.id, data), 'Clinical decision approved'); }
+  function implement(event) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); implementation.run(() => decisionService.implement(patient.id, data), 'Implementation recorded'); }
+  return <><Card title="Clinical decision"><p className="tiny muted">A clinician approves the decision. Automated treatment recommendations and Stanford integration are not yet connected.</p><Feedback error={approval.error} success={approval.success} />{patient.decision ? <><div className="notice info">Approved: <b>{patient.decision}</b> · {formatDate(patient.decision_at)}</div><div className="detail-list"><div><label>Intended regimen</label>{patient.recommended_regimen || 'Missing'}</div><div><label>Clinical rationale</label>{patient.decision_notes || 'Missing'}</div></div></> : <><form onSubmit={approve}><fieldset disabled={user.role !== 'clinician' || patient.status !== 'Usable result' || approval.busy}><div className="form-grid"><FormField label="Decision" name="decision"><select id="decision" name="decision" required defaultValue=""><option value="">Choose decision…</option>{['Maintained', 'Substituted', 'Switched'].map(value => <option key={value}>{value}</option>)}</select></FormField><FormField label="Intended regimen" name="recommended_regimen" required /><FormField label="Clinical rationale" name="decision_notes" full><textarea id="decision_notes" name="decision_notes" required maxLength="5000" /></FormField></div><div className="form-actions"><button className="btn">Approve clinical decision</button></div></fieldset></form>{patient.status !== 'Usable result' && <div className="notice">A usable laboratory result is required before approval.</div>}</>}</Card><Card title="Decision implementation"><Feedback error={implementation.error} success={implementation.success} />{patient.implemented_at ? <><div className="notice info">Implemented: {formatDate(patient.implemented_at)}</div><p>{patient.implementation_notes}</p></> : <form onSubmit={implement}><fieldset disabled={!patient.decision || !canImplement || implementation.busy}><FormField label="How implementation was confirmed" name="implementation_notes"><textarea id="implementation_notes" name="implementation_notes" required maxLength="5000" /></FormField><div className="form-actions"><button className="btn">Record implementation</button></div></fieldset></form>}</Card></>;
+}

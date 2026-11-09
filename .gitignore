@@ -1,0 +1,26 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+# Backend runtime data and secrets
+backend/.venv/
+backend/data/*.sqlite3
+backend/data/*.sqlite3-*
+backend/data/local_login.txt
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+
+# Patient datasets
+*.csv
+*.xlsx
+*.xls
+
+# Other local databases
+*.db
+*.sqlite
+*.sqlite-*
+
+# Environment files
+.env.*
+!.env.example
