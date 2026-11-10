@@ -39,6 +39,9 @@ def import_rows(con, rows, source, user):
         if cur.rowcount:
             pid = cur.lastrowid
             con.execute('INSERT INTO episodes(patient_id) VALUES(?)', (pid,))
+            if source == 'original':
+                from .history_service import map_history
+                map_history(con, pid, raw)
             added += 1
         else:
             skipped += 1

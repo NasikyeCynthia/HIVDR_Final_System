@@ -17,6 +17,10 @@ Start: `python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000` af
 
 Routers validate requests with `app/schemas/`, then call `app/services/`. Services make role checks and transactional changes through `app/core/database.py`. The database schema is in `app/models/schema.sql`. A user being allowed to view a record does not grant permission to edit it.
 
-`app/services/ml_service.py` is the place for future model inference. `app/services/stanford_service.py` is the place for future Stanford mutation interpretation. Both currently return an honest disconnected status.
+`app/services/ml_service.py` is the place for future model inference. `app/services/stanford_service.py` is the place for future Stanford mutation interpretation. The Stanford service now calls the official Sierra GraphQL API with sequence or mutation input. The ML service remains unconnected. Additional review, assignment and account-scope endpoints are in app/routers/workflow.py.
 
 SQLite stores the current episode, patient source snapshots, discussion and audit events. Runtime database files, credentials and virtual environments are excluded from the distributable and Git.
+
+## v0.4 record operations and model
+
+app/routers/operations.py exposes full record corrections, archive/restore, clinician amendments, staff account creation and model inference. app/services/record_service.py maps the source catalogue into sections and preserves original values behind overlays. app/services/ml_service.py performs dependency-free inference using ml/artifacts/model.json. Read ml/MODEL_CARD.md before interpreting the estimate.

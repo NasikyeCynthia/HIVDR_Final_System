@@ -1,4 +1,5 @@
 import math
+import json
 from ..core.errors import DomainError
 from ..core.database import now
 from ..models.constants import CLINICAL_FIELDS
@@ -7,10 +8,12 @@ from .risk_service import score
 
 def update_profile(con, user, p, e, data):
     pid = p['id']
+    expected=data.pop('expected_version',None)
+    if expected is not None and expected!=p.get('data_version',0):raise DomainError('The profile changed. Reload before saving.',409)
     if user['role'] not in ('nurse', 'counsellor'):
         raise DomainError('Only nurses and counsellors can edit profiles', 403)
-    if p['assigned_to'] not in (None, user['id']):
-        raise DomainError('This patient is assigned to another care worker', 403)
+    if user['facility'] != p['facility']:
+        raise DomainError('Edit patients at your assigned facility', 403)
     if set(data) - CLINICAL_FIELDS:
         raise ValueError('Profile contains fields outside your permission')
     updated = {**p, **data}
@@ -27,7 +30,13 @@ def update_profile(con, user, p, e, data):
     if updated['treatment_line'] not in (None, 1, 2, 3):
         raise ValueError('Treatment line must be 1, 2 or 3')
     fields = sorted(CLINICAL_FIELDS)
-    con.execute('UPDATE patients SET ' + ','.join((k + '=?' for k in fields)) + ',assigned_to=? WHERE id=?', [updated.get(k) for k in fields] + [user['id'], pid])
+    changed=con.execute('UPDATE patients SET ' + ','.join((k + '=?' for k in fields)) + ',assigned_to=COALESCE(assigned_to,?) WHERE id=? AND data_version=?', [updated.get(k) for k in fields] + [user['id'], pid,p.get('data_version',0)])
+    if changed.rowcount!=1:raise DomainError('The profile changed. Reload before saving.',409)
+    from .record_service import CORE
+    overrides=json.loads(p.get('source_overrides_json') or '{}')
+    for key,field in CORE.items():
+        if field in data: overrides[key]='' if updated[field] is None else str(updated[field])
+    con.execute('UPDATE patients SET source_overrides_json=?,data_version=data_version+1 WHERE id=?',(json.dumps(overrides),pid))
     audit(con, user, 'profile update', pid, {k: p[k] for k in fields}, {k: updated[k] for k in fields})
 
 def assign_care_worker(con, user, p, e, data):

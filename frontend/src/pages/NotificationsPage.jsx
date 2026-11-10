@@ -1,17 +1,7 @@
-import { Link } from 'react-router-dom';
-import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
-import PageHeader from '../components/common/PageHeader.jsx';
-import Card from '../components/common/Card.jsx';
-import Badge from '../components/common/Badge.jsx';
-export default function NotificationsPage() {
-  const { visiblePatients } = useWorkspace();
-  const rows = visiblePatients.map(patient => {
-    const reasons = [];
-    if (patient.missing_pre.length) reasons.push(`Missing profile: ${patient.missing_pre.join(', ')}`);
-    if (['Unamplified', 'Sequencing failed'].includes(patient.status)) reasons.push(`Laboratory: ${patient.failure_reason || 'unsuccessful test; reason missing'}`);
-    if (patient.status === 'Usable result' && !patient.reviewed_at) reasons.push('Usable result awaits clinician review');
-    if (patient.decision && !patient.implemented_at) reasons.push('Approved decision awaits implementation');
-    return { patient, reasons };
-  }).filter(row => row.reasons.length);
-  return <><PageHeader title="Notifications" description="A live work queue showing missing information, reasons and responsible care workers." /><Card title="Outstanding follow-up" action={<Badge color="yellow">{rows.length} records</Badge>}><div className="notification-list">{rows.slice(0, 200).map(({ patient, reasons }) => <article className="notification-item" key={patient.id}><div><b>{patient.name}</b><p className="tiny muted">{patient.external_id} · Care worker: {patient.owner_name || 'Unassigned'}</p><ul>{reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></div><Link className="text-link" to={`/patients/${patient.id}`}>Open →</Link></article>)}{!rows.length && <div className="empty">No outstanding follow-up for this source.</div>}{rows.length > 200 && <p className="tiny muted">Showing 200 records. Use Patient records to filter the full list.</p>}</div></Card><p className="tiny muted">This is an in-app queue. External notification delivery, acknowledgement and escalation schedules are not implemented.</p></>;
-}
+import {useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
+import {useAuth} from '../contexts/AuthContext.jsx';
+import {taskQueue} from '../utils/taskQueue.js';
+import PageHeader from '../components/common/PageHeader.jsx';import Card from '../components/common/Card.jsx';
+export default function NotificationsPage(){const {visiblePatients,users,refresh}=useWorkspace();const {user}=useAuth();const [owner,setOwner]=useState('all');useEffect(()=>{const timer=setInterval(()=>refresh().catch(()=>{}),60000);return ()=>clearInterval(timer)},[refresh]);const tasks=taskQueue(visiblePatients,users).filter(t=>user.role!=='nurse'||t.type==='Profile');const shown=tasks.filter(t=>owner==='all'||(owner==='mine'?t.ownerId===user.id:t.owner===owner));return <><PageHeader title="Notifications and work queue" description="Identify the next action, responsible staff member and outstanding delay."/><div className="toolbar"><select aria-label="Task owner" value={owner} onChange={e=>setOwner(e.target.value)}><option value="all">All staff</option><option value="mine">My tasks</option>{[...new Set(tasks.map(t=>t.owner))].map(n=><option key={n}>{n}</option>)}</select><span>{shown.length} outstanding tasks</span></div><Card title="Action reminders" subtitle="Refreshes every minute; tasks disappear when their underlying work is completed"><div className="table-wrap"><table><thead><tr><th>Patient</th><th>Task</th><th>Responsible person</th><th>Reason / missing section</th><th>Waiting</th><th/></tr></thead><tbody>{shown.slice(0,300).map(t=><tr key={t.key}><td>{t.patient.external_id}<div className="tiny muted">{t.patient.name}</div></td><td>{t.type}</td><td>{t.owner}</td><td>{t.reason}</td><td>{t.days==null?'Date missing':`${t.days} days`}{t.overdue&&<span className="badge red">Overdue</span>}</td><td><Link className="text-link" to={`/patients/${t.patient.id}?tab=${t.tab}`}>Act →</Link></td></tr>)}</tbody></table>{!shown.length&&<p>No outstanding tasks in this view.</p>}</div><p className="tiny muted">The operational reminder threshold is 7 days; it is not a clinical urgency rule. External email/SMS reminders are not enabled. Showing up to 300 tasks; filter by owner to narrow the list.</p></Card></>}

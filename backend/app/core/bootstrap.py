@@ -1,3 +1,5 @@
+from .migrations import migrate
+from ..services.record_service import repair_existing
 import csv
 import secrets
 from .config import ROOT, DB, SCHEMA
@@ -9,9 +11,11 @@ def initialize():
     DB.parent.mkdir(exist_ok=True)
     with connect() as con:
         con.executescript(SCHEMA.read_text(encoding='utf-8'))
+        migrate(con)
+        repair_existing(con)
         if not con.execute('SELECT count(*) FROM users').fetchone()[0]:
             password = secrets.token_urlsafe(12)
-            for username, name, role in [('admin', 'Demo Administrator', 'admin'), ('nurse', 'Nurse Amina', 'nurse'), ('counsellor', 'Counsellor David', 'counsellor'), ('lab', 'Laboratory Officer Sarah', 'lab'), ('clinician', 'Dr. Daniel', 'clinician')]:
+            for username, name, role in [('admin', 'Demo Administrator', 'admin'), ('nurse', 'Ms. Cynthia Nasikye', 'nurse'), ('counsellor', 'Counsellor David', 'counsellor'), ('lab', 'Dr. Stephen', 'lab'), ('clinician', 'Dr. Daniel', 'clinician')]:
                 salt = secrets.token_hex(16)
                 con.execute('INSERT INTO users(username,name,role,facility,salt,password_hash) VALUES(?,?,?,?,?,?)', (username, name, role, 'Demo Facility', salt, password_hash(password, salt)))
             (ROOT / 'data' / 'local_login.txt').write_text('LOCAL DEMO ACCOUNTS\nUsernames: admin, nurse, counsellor, lab, clinician\nPassword: ' + password + '\n', encoding='utf-8')

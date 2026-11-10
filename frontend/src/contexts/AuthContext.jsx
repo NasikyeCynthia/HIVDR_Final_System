@@ -8,10 +8,12 @@ export function AuthProvider({ children }) {
   const [connectionError, setConnectionError] = useState('');
   useEffect(() => {
     let active = true;
+    const expired=()=>setUser(null);
+    window.addEventListener('session-expired',expired);
     authService.me().then(value => { if (active) setUser(value); })
       .catch(error => { if (active && error.status !== 401) setConnectionError(error.message); })
       .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    return () => { active = false; window.removeEventListener('session-expired',expired); };
   }, []);
   async function login(data) {
     await authService.login(data);

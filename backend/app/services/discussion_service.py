@@ -7,7 +7,7 @@ from .risk_service import score
 
 def add_discussion(con, user, p, e, data):
     pid = p['id']
-    if user['role'] not in ('nurse', 'counsellor', 'clinician'):
+    if user['role'] not in ('counsellor', 'clinician'):
         raise DomainError('Clinical discussion permission required', 403)
     body = str(data.get('body', '')).strip()
     if not body or len(body) > 5000:

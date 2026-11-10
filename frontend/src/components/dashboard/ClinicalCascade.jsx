@@ -1,13 +1,7 @@
 import { Link } from 'react-router-dom';
 import Card from '../common/Card.jsx';
-import { percentage } from '../../utils/format.js';
-export default function ClinicalCascade({ patients }) {
-  const usable = patients.filter(p => p.status === 'Usable result').length;
-  const reviewed = patients.filter(p => p.reviewed_at).length;
-  const decisions = patients.filter(p => p.decision).length;
-  const implemented = patients.filter(p => p.implemented_at).length;
-  return <Card title="Clinical follow-through" subtitle="Usable results through to implemented care">
-    {[['Usable results', usable, 'usable'], ['Reviewed', reviewed, 'reviewed'], ['Decision recorded', decisions, 'decision'], ['Implemented', implemented, 'implemented']].map(([label, count, filter]) => <Link className="clinical-row" to={`/patients?filter=${filter}`} key={label}><span>{label}</span><div className="track"><div className="fill" style={{ width: `${percentage(count, usable)}%` }} /></div><b>{count}</b></Link>)}
-    <div className="notice info" style={{ marginTop: 25 }}>{usable - reviewed} await review · {decisions - implemented} decisions await implementation</div>
-  </Card>;
+export default function ClinicalCascade({patients}) {
+ const reviewed=patients.filter(p=>p.reviewed_at),n=reviewed.length;
+ const rows=[['Reviewed',n,'reviewed','#5274b1'],['Maintained',reviewed.filter(p=>p.decision==='Maintained').length,'Maintained','#27845d'],['Switched',reviewed.filter(p=>p.decision==='Switched').length,'Switched','#c34351'],['Substituted',reviewed.filter(p=>p.decision==='Substituted').length,'Substituted','#d8a510'],['Implemented',reviewed.filter(p=>p.implemented_at).length,'implemented','#8066a8']];
+ return <Card title="Clinical cascade" subtitle="Decisions among reviewed patients"><div className="cascade">{rows.map(([label,count,filter,color])=><Link key={label} className="bar-col" to={`/patients?cohort=reviewed&filter=${filter}`}><span className="bar-value">{count}</span><span className="bar-percent">{n?Math.round(count/n*100):0}%</span><span className="bar" style={{height:`${Math.max(1,n?count/n*155:1)}px`,background:color}}/></Link>)}</div><div className="bar-labels">{rows.map(([label])=><span key={label}>{label}</span>)}</div><p className="tiny muted">Maintained, switched and substituted are parallel outcomes of review. Implementation applies to every decision.</p><Link className="text-link" to="/patients?filter=awaiting-review">{patients.filter(p=>p.status==='Usable result'&&!p.reviewed_at).length} usable results await review →</Link><br/><Link className="text-link" to="/patients?filter=awaiting-implementation">{reviewed.filter(p=>p.decision&&!p.implemented_at).length} decisions await implementation →</Link></Card>;
 }

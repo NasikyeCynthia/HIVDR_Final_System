@@ -13,6 +13,7 @@ export async function request(path, { method = 'GET', data } = {}) {
   }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if(response.status===401 && !path.includes('/auth/login')) window.dispatchEvent(new Event('session-expired'));
     const detail = Array.isArray(body.detail)
       ? body.detail.map(item => `${item.loc?.slice(1).join('.')}: ${item.msg}`).join('; ')
       : body.detail;

@@ -14,6 +14,11 @@ import NotificationsPage from './pages/NotificationsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
+function NurseRestricted({ children }) {
+  const { user } = useAuth();
+  return user.role === 'nurse' ? <Navigate to="/patients" replace /> : children;
+}
+
 export default function App() {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading">Opening your workspace…</div>;
@@ -25,9 +30,9 @@ export default function App() {
     <Route path="/patients" element={<PatientRecordsPage />} />
     <Route path="/patients/:patientId" element={<PatientDetailPage />} />
     <Route path="/risk-assessment" element={<RiskAssessmentPage />} />
-    <Route path="/lab-results" element={<LabResultsPage />} />
-    <Route path="/resistance-classification" element={<ResistanceClassificationPage />} />
-    <Route path="/discussion" element={<DiscussionPage />} />
+    <Route path="/lab-results" element={<NurseRestricted><LabResultsPage /></NurseRestricted>} />
+    <Route path="/resistance-classification" element={<NurseRestricted><ResistanceClassificationPage /></NurseRestricted>} />
+    <Route path="/discussion" element={<NurseRestricted><DiscussionPage /></NurseRestricted>} />
     <Route path="/notifications" element={<NotificationsPage />} />
     <Route path="/settings" element={<SettingsPage />} />
     <Route path="*" element={<NotFoundPage />} />

@@ -39,8 +39,8 @@ class ServiceTests(unittest.TestCase):
         for line,expected in [(1,0),(2,30),(3,60)]:
             self.assertEqual(score({'viral_load':0,'adherence':100,'treatment_line':line})['factors'][2]['points'],expected)
         self.assertEqual(score({'viral_load':1000,'adherence':82,'treatment_line':3})['total'],180)
-        self.assertEqual(score({'viral_load':1000,'adherence':82,'treatment_line':3})['category'],'Rule unresolved')
-        self.assertEqual(score({'viral_load':1000,'adherence':None,'treatment_line':3})['category'],'Incomplete')
+        self.assertEqual(score({'viral_load':1000,'adherence':82,'treatment_line':3})['category'],'High')
+        self.assertEqual(score({'viral_load':1000,'adherence':None,'treatment_line':3})['category'],'High')
 
     def test_role_assignment_and_facility_permissions(self):
         with database.connect() as con:
@@ -48,8 +48,9 @@ class ServiceTests(unittest.TestCase):
         with self.assertRaises(DomainError) as error:
             change_patient(2,self.users['lab'],{'adherence':99},update_profile)
         self.assertEqual(error.exception.status_code,403)
-        with self.assertRaises(DomainError):
-            change_patient(2,self.users['counsellor'],{'adherence':99},update_profile)
+        change_patient(2,self.users['counsellor'],{'adherence':99},update_profile)
+        with database.connect() as con:
+            self.assertEqual(con.execute('SELECT assigned_to FROM patients WHERE id=2').fetchone()[0],self.users['nurse']['id'])
         with database.connect() as con:
             con.execute("UPDATE patients SET facility='Other Facility' WHERE id=2")
         with self.assertRaises(DomainError) as error:

@@ -4,11 +4,14 @@ from ..core.database import now
 from ..models.constants import CLINICAL_FIELDS
 from .audit_service import audit
 from .risk_service import score
+from .patient_service import decorate
 
 def approve_decision(con, user, p, e, data):
     pid = p['id']
     if user['role'] != 'clinician':
         raise DomainError('Clinician permission required', 403)
+    if not decorate({**p,**e})['pre_complete']:
+        raise ValueError('Complete the pre-discussion profile before approving a decision')
     if e['status'] != 'Usable result':
         raise ValueError('A usable laboratory result is required')
     if data.get('decision') not in ('Maintained', 'Switched', 'Substituted'):
@@ -20,6 +23,9 @@ def approve_decision(con, user, p, e, data):
     stamp = now()
     con.execute('UPDATE episodes SET reviewed_at=?,reviewer=?,decision=?,decision_at=?,decision_notes=?,recommended_regimen=? WHERE patient_id=?', (stamp, user['id'], data['decision'], stamp, data['decision_notes'], data['recommended_regimen'], pid))
     audit(con, user, 'clinical decision approved', pid, e, data)
+    from .record_service import overlay_changes
+    overlay_changes(con,pid,{'Decision Date':stamp[:10],'decision Category':data['decision'],'Decision':data['decision_notes'],'Assigned ART by switch committee':data['recommended_regimen']})
+
 
 def implement_decision(con, user, p, e, data):
     pid = p['id']
@@ -31,3 +37,5 @@ def implement_decision(con, user, p, e, data):
         raise ValueError('An approved decision and implementation notes are required')
     con.execute('UPDATE episodes SET implemented_at=?,implementation_notes=? WHERE patient_id=?', (now(), data['implementation_notes'], pid))
     audit(con, user, 'decision implemented', pid, e, data)
+    from .record_service import overlay_changes
+    overlay_changes(con,pid,{'ART started by patient':e['recommended_regimen'],'ART start date':now()[:10]})

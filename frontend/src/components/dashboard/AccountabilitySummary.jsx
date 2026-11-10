@@ -1,0 +1,4 @@
+import {Link} from 'react-router-dom';
+import Card from '../common/Card.jsx';
+import {taskQueue} from '../../utils/taskQueue.js';
+export default function AccountabilitySummary({patients,users}){const groups={};for(const t of taskQueue(patients,users)){const g=groups[t.owner]||(groups[t.owner]={total:0,profiles:0,lab:0});g.total++;if(t.type==='Profile')g.profiles++;if(['Failed test','Lab result','DBS reason'].includes(t.type))g.lab++;}return <Card title="Who needs to act" subtitle="Outstanding work by responsible staff member" action={<Link className="text-link" to="/notifications">View reminders →</Link>}><div className="table-wrap"><table><thead><tr><th>Responsible person</th><th>Incomplete profiles</th><th>Laboratory tasks</th><th>Total tasks</th></tr></thead><tbody>{Object.entries(groups).sort((a,b)=>b[1].total-a[1].total).map(([owner,g])=><tr key={owner}><td>{owner}</td><td>{g.profiles}</td><td>{g.lab}</td><td>{g.total}</td></tr>)}</tbody></table></div></Card>}

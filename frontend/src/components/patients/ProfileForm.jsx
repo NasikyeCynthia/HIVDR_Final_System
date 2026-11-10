@@ -7,14 +7,15 @@ import Feedback from '../common/Feedback.jsx';
 export default function ProfileForm({ patient, onSaved }) {
   const { user } = useAuth();
   const action = usePatientAction(onSaved);
-  const permitted = ['nurse', 'counsellor'].includes(user.role) && (!patient.assigned_to || patient.assigned_to === user.id);
+  const permitted = ['nurse', 'counsellor'].includes(user.role) && user.facility===patient.facility && !patient.archived_at;
   function submit(event) {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
+    data.expected_version=patient.data_version||0;
     for (const key of ['age', 'viral_load', 'adherence', 'treatment_line']) data[key] = data[key] === '' ? null : Number(data[key]);
     action.run(() => patientService.updateProfile(patient.id, data));
   }
-  return <Card title="Clinical and patient information"><Feedback error={action.error} success={action.success} />{!permitted && <div className="notice info">Read-only: profile changes require the assigned nurse/counsellor.</div>}<form onSubmit={submit}><fieldset disabled={!permitted || action.busy}>
+  return <Card title="Clinical and patient information"><Feedback error={action.error} success={action.success} />{!permitted && <div className="notice info">Read-only: use a nurse/counsellor account assigned to this hospital. An administrator can configure accounts in Settings.</div>}<form onSubmit={submit}><fieldset disabled={!permitted || action.busy}>
     <div className="form-grid"><FormField label="Patient display name" name="name" defaultValue={patient.name} required />
       <FormField label="Age (years)" name="age" type="number" min="0" max="120" step="any" defaultValue={patient.age ?? ''} />
       <FormField label="Sex" name="sex"><select id="sex" name="sex" defaultValue={patient.sex || ''}><option value="">Not recorded</option><option value="F">Female</option><option value="M">Male</option><option value="X">Other / recorded X</option></select></FormField>

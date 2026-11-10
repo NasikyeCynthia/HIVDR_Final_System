@@ -1,6 +1,17 @@
 # Frontend
 frontend/node_modules/
 frontend/dist/
+# Local data exports and databases
+*.csv
+*.xlsx
+*.xls
+*.db
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+!backend/data/synthetic_patients.csv
+!backend/data/original_columns.csv
 # Backend runtime data and secrets
 backend/.venv/
 backend/data/*.sqlite3
@@ -10,17 +21,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .env
-
-# Patient datasets
-*.csv
-*.xlsx
-*.xls
-
-# Other local databases
-*.db
-*.sqlite
-*.sqlite-*
-
-# Environment files
 .env.*
 !.env.example
+
+# Local update backups can contain clinical records
+_update_backups/

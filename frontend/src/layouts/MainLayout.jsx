@@ -2,14 +2,38 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar.jsx';
 import Topbar from '../components/layout/Topbar.jsx';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
+
 export default function MainLayout() {
-  const { source, setSource, visiblePatients, loading, error, refresh } = useWorkspace();
-  return <div className="shell"><Sidebar /><main className="main"><Topbar /><div className="content">
-    <div className="toolbar source-toolbar"><label htmlFor="data-source">DATA SOURCE</label><select id="data-source" value={source} onChange={event => setSource(event.target.value)}>
-      <option value="synthetic">Synthetic demo</option><option value="original">Original imported data</option><option value="manual">Manually registered</option><option value="all">All sources</option>
-    </select><span className="count-chip">{visiblePatients.length} records</span><button className="text-link" disabled={loading} onClick={() => refresh().catch(() => {})}>{loading ? 'Refreshing…' : '↻ Refresh'}</button></div>
-    {source === 'synthetic' && <div className="notice info">DEMO DATA · 499 source rows are bundled. Care-worker assignments and workflow statuses use a separate fictional demonstration overlay.</div>}
-    {error ? <p role="alert" className="notice error">{error}</p> : null}
-    <Outlet /><div className="footer-note"><span>HIVDR Surveillance · React frontend / Python API</span><span>Local prototype · v0.2</span></div>
-  </div></main></div>;
+  const {
+    facility, setFacility, facilities, canAccessAll, source, loading, error, refresh,
+  } = useWorkspace();
+  const facilityValue = facility === 'all' || facilities.includes(facility) ? facility : '';
+
+  return <div className="shell">
+    <Sidebar />
+    <main className="main">
+      <Topbar />
+      <div className="content">
+        <div className="toolbar">
+          <span className="tiny muted"><b>Dataset in use:</b> {source === 'synthetic' ? 'Synthetic demo' : 'Original data'}</span>
+          <label htmlFor="facility-scope">Healthcare facility</label>
+          <select id="facility-scope" value={facilityValue} disabled={!canAccessAll && !facilities.length} onChange={event => setFacility(event.target.value)}>
+            {canAccessAll && <option value="all">All facilities (view only)</option>}
+            {facilities.length
+              ? facilities.map(name => <option key={name} value={name}>{name}</option>)
+              : <option value="">No facilities in this dataset for your account</option>}
+          </select>
+          <button className="text-link" disabled={loading} onClick={() => refresh().catch(() => {})}>
+            {loading ? 'Refreshing…' : '↻ Refresh'}
+          </button>
+        </div>
+        {!canAccessAll && !facilities.length && <p className="notice info">
+          Your assigned facility has no records in the selected dataset. An administrator can assign your account to an Original-data facility.
+          Viewing access does not grant permission to edit or approve at other facilities.
+        </p>}
+        {error && <p role="alert" className="notice error">{error}</p>}
+        <Outlet />
+      </div>
+    </main>
+  </div>;
 }

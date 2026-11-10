@@ -1,3 +1,4 @@
+import json
 import math
 from ..core.errors import DomainError
 from ..core.database import now
@@ -20,9 +21,16 @@ def update_lab_result(con, user, p, e, data):
     if e['reviewed_at']:
         raise ValueError('This episode has been reviewed. Create a new test episode before replacing its result (not yet available in this version).')
     stamp = now()
+    con.execute('INSERT INTO lab_attempts(patient_id,actor_id,created_at,snapshot_json) VALUES(?,?,?,?)',(pid,user['id'],stamp,json.dumps(e)))
+    con.execute('UPDATE episodes SET interpretation_json=NULL,interpreted_at=NULL WHERE patient_id=?',(pid,))
     report = stamp if status != 'Pending' else None
-    con.execute('UPDATE episodes SET sample_type=?,dbs_reason=?,sample_at=COALESCE(sample_at,?),lab_owner=?,status=?,failure_reason=?,report_at=?,amplified=?,mutations=?,version=version+1 WHERE patient_id=?', (kind, data.get('dbs_reason', ''), stamp, user['id'], status, data.get('failure_reason', ''), report, 0 if status == 'Unamplified' else 1 if status in ('Usable result', 'Sequencing failed') else None, str(data.get('mutations', '')), pid))
+    con.execute('UPDATE episodes SET sample_type=?,dbs_reason=?,sample_at=?,lab_owner=?,status=?,failure_reason=?,report_at=?,amplified=?,mutations=?,repeat_requested_at=NULL,version=version+1 WHERE patient_id=?', (kind, data.get('dbs_reason', ''), stamp, user['id'], status, data.get('failure_reason', ''), report, 0 if status == 'Unamplified' else 1 if status in ('Usable result', 'Sequencing failed') else None, str(data.get('mutations', '')), pid))
     audit(con, user, 'laboratory update', pid, e, data)
+    from .record_service import overlay_changes
+    overlay_changes(con,pid,{'Sample Type':kind,'Lab failure reason':data.get('failure_reason',''),'DBS justification':data.get('dbs_reason',''),'Sample collection Date':stamp[:10],'DR_results_releaseDate':report[:10] if report else '',
+        'amplified':'0' if status=='Unamplified' else '1' if status in ('Usable result','Sequencing failed') else '',
+        'All Mutations Combined':str(data.get('mutations',''))})
+
 
 def request_repeat_sample(con, user, p, e, data):
     pid = p['id']

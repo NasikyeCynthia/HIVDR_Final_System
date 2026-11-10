@@ -1,0 +1,123 @@
+{
+  "version": "hivdr-panel-v1",
+  "trained_at": "2026-11-09T11:39:38.730292+00:00",
+  "selected_model": "Random forest",
+  "target": "Any low-level-or-greater resistance across the fully observed 12-drug RT/IN panel",
+  "panel": [
+    "BIC",
+    "CAB",
+    "DTG",
+    "RAL",
+    "3TC",
+    "ABC",
+    "AZT",
+    "TDF",
+    "DOR",
+    "EFV",
+    "ETR",
+    "NVP"
+  ],
+  "original_rows": 39711,
+  "complete_panel_rows": 9934,
+  "training_eligible_rows": 9934,
+  "split": {
+    "train": {
+      "rows": 6620,
+      "facilities": 755,
+      "positive_rate": 0.5842900302114804
+    },
+    "validation": {
+      "rows": 1575,
+      "facilities": 189,
+      "positive_rate": 0.6025396825396825
+    },
+    "test": {
+      "rows": 1739,
+      "facilities": 236,
+      "positive_rate": 0.6124209315698678
+    }
+  },
+  "threshold": 0.6399999999999997,
+  "model_comparison": {
+    "Logistic regression": {
+      "validation_roc_auc": 0.6813141123833057
+    },
+    "Random forest": {
+      "validation_roc_auc": 0.6996114962109098
+    }
+  },
+  "held_out_test": {
+    "roc_auc": 0.7211330296317967,
+    "average_precision": 0.7878230223871556,
+    "accuracy": 0.667625071880391,
+    "balanced_accuracy": 0.669809559632772,
+    "sensitivity": 0.6600938967136151,
+    "specificity": 0.6795252225519288,
+    "brier_score": 0.20346104692552675,
+    "confusion_matrix": {
+      "tn": 458,
+      "fp": 216,
+      "fn": 362,
+      "tp": 703
+    }
+  },
+  "top_global_features": [
+    {
+      "feature": "regimen=TDF-3TC-DTG",
+      "importance": 0.17396932356456962
+    },
+    {
+      "feature": "art_years_at_sample",
+      "importance": 0.15518572108181092
+    },
+    {
+      "feature": "treatment_line",
+      "importance": 0.13166982102551414
+    },
+    {
+      "feature": "age",
+      "importance": 0.12710589206413114
+    },
+    {
+      "feature": "prior_vl_count",
+      "importance": 0.09582874758765406
+    },
+    {
+      "feature": "log_viral_load",
+      "importance": 0.0933228917869072
+    },
+    {
+      "feature": "log_prior_vl",
+      "importance": 0.08811675515860663
+    },
+    {
+      "feature": "regimen=AZT-3TC-DTG",
+      "importance": 0.0555082797677861
+    },
+    {
+      "feature": "regimen=ABC-3TC-DTG",
+      "importance": 0.01535546632552393
+    },
+    {
+      "feature": "log_prior_vl_missing",
+      "importance": 0.011726274868222088
+    },
+    {
+      "feature": "sex=F",
+      "importance": 0.011467391532659231
+    },
+    {
+      "feature": "sex=M",
+      "importance": 0.011009971018500245
+    }
+  ],
+  "limitations": [
+    "Retrospective referred-and-tested cohort; cannot establish performance in untested low-risk patients.",
+    "Facility-disjoint evaluation reduces repeated-record leakage; stable person identifiers were unavailable, so transfers across facilities cannot be excluded.",
+    "Adherence is absent from original data and is not an ML input. Psychosocial, mutations, resistance fields, decisions and post-DRT outcomes are excluded as inputs.",
+    "Prior viral loads require a dated observation on or before the index sample. ART duration is derived at that sample date.",
+    "Outcome requires all 12 panel results and excludes PI-only resistance. Potential low-level resistance is below the binary target threshold.",
+    "Not prospectively validated. Estimates support a research demonstration; they do not confirm resistance or determine treatment/referral."
+  ],
+  "data_sha256": "885c11865717583b7098d36f6dc65a485d2b3cb576ee62ee227c5f26d9a552c6"
+}

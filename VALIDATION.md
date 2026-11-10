@@ -1,15 +1,10 @@
-# Validation of this reorganization
+# v0.4 validation
 
-| Check | Result |
-| --- | --- |
-| Python module compilation | Passed |
-| Five backend service tests | Passed |
-| 53 JavaScript/JSX files parsed | Passed |
-| Relative frontend imports and named page files | Passed |
-| Pydantic schema validation | Passed: numeric bounds, field restrictions, lab and decision types |
-| Bundled synthetic sample initialization | Passed: 499 records and five roles |
-| Four FastAPI HTTP integration tests | Included; skipped because FastAPI/httpx are unavailable here |
-| npm install / Vite production build | Not run; required package downloads are unavailable here |
-| Browser interaction / responsive visual QA | Not run for this React version |
-
-Run the backend development tests and frontend production build using the root README commands after installing dependencies. Service checks do not establish full HTTP or browser integration, model validity or clinical suitability.
+- React/Vite production build passed.
+- 23 backend/API regression checks passed. They cover field preservation, clearing, role and facility permissions, concurrent save conflicts, account creation, archiving/restoration, clinician amendments, laboratory reason requirements and model inference.
+- Actual-data private-copy smoke test passed: hospital-specific account login, scoped record access, field edits/clearing, source preservation and prediction. No live Desktop records changed.
+- Random Forest and Logistic Regression compared on facility-disjoint validation data. Random Forest selected; held-out AUROC 0.721 on 1,739 records. Detailed metrics and limitations: backend/ml/MODEL_CARD.md.
+- Portable model export verified against sklearn held-out predictions to 1e-8 probability.
+- First automatic historical mapping tested on a private copy of 39,711 original records.
+- Compact patient list measured at 1.17 MB compressed for 40,210 active records.
+- Browser visual/interaction verification remains incomplete. Production identity, deployment and prospective clinical model validation are not established by these checks.

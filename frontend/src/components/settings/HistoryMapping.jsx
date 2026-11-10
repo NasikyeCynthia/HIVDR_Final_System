@@ -1,0 +1,5 @@
+import {useState} from 'react';
+import {workflowService} from '../../services/workflowService.js';
+import {useWorkspace} from '../../contexts/WorkspaceContext.jsx';
+import Card from '../common/Card.jsx';import Feedback from '../common/Feedback.jsx';
+export default function HistoryMapping(){const {refresh}=useWorkspace();const [busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');async function run(){setBusy(true);setError('');try{const r=await workflowService.mapHistory();await refresh();setSuccess(`${r.mapped} untouched original records mapped from documented history.`);}catch(e){setError(e.message)}finally{setBusy(false)}}return <Card title="Historical original-data workflow" className="section-gap"><p className="tiny muted">Populate untouched episodes from the original sample, referral, report, resistance and decision fields. Existing active workflows are skipped. No adherence or responsible staff names are invented. Source snapshots remain unchanged.</p><Feedback error={error} success={success}/><button className="btn" onClick={run} disabled={busy}>{busy?'Mapping…':'Map documented history'}</button></Card>}

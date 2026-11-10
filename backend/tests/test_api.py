@@ -10,6 +10,8 @@ HAS_HTTP_TEST_DEPS = all(importlib.util.find_spec(module) for module in ('fastap
 class ApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        from app.routers.auth import attempts
+        attempts.clear()
         from fastapi.testclient import TestClient
         from app.core import bootstrap, database
         from app.main import app

@@ -8,7 +8,7 @@ router = APIRouter(prefix='/api/risk', tags=['Risk assessment'])
 
 @router.get('/rules')
 def rules(user=Depends(current_user)):
-    return {'notice': score({})['notice'], 'weights': {'high': 60, 'moderate': 30, 'low': 0}, 'overall_rule_ready': False}
+    return {'notice': score({})['notice'], 'weights': {'high': 60, 'moderate': 30, 'low': 0}, 'overall_rule_ready': True}
 
 @router.get('/{patient_id}')
 def assess(patient_id: int, user=Depends(current_user)):
