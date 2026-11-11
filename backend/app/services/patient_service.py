@@ -8,7 +8,7 @@ def allowed(user, p):
 
 def records(con, user, include_archived=False, summary=False):
     pcols='id,external_id,source,dataset_source,name,facility,age,sex,regimen,treatment_line,viral_load,adherence,assigned_to,created_at,archived_at,archive_reason'
-    ecols='referred_at,sample_at,sample_type,dbs_reason,lab_owner,status,failure_reason,report_at,amplified,repeat_requested_at,reviewed_at,reviewer,decision,decision_at,decision_notes,recommended_regimen,implemented_at,implementation_notes'
+    ecols='referred_at,sample_at,sample_type,dbs_reason,lab_owner,status,failure_reason,report_at,amplified,repeat_requested_at,reviewed_at,reviewer,decision,discussion_status,decision_at,decision_notes,recommended_regimen,implemented_at,implementation_notes'
     sql='SELECT '+','.join('p.'+k for k in pcols.split(','))+','+','.join('e.'+k for k in ecols.split(','))+',u.name AS owner_name,lab.name AS lab_owner_name,clinician.name AS reviewer_name FROM patients p LEFT JOIN users u ON p.assigned_to=u.id JOIN episodes e ON e.patient_id=p.id LEFT JOIN users lab ON lab.id=e.lab_owner LEFT JOIN users clinician ON clinician.id=e.reviewer'
     if user['role'] not in ('admin', 'nurse') and not user.get('can_access_all'):
         sql+=' WHERE p.facility=?';args=(user['facility'],)
@@ -32,9 +32,12 @@ def decorate(p):
     p['approval_blockers'] = []
     p['risk'] = score(p)
     p['missing_pre'] = [f for f in PROFILE_FIELDS if not present(p.get(f))]
-    p['missing_post'] = [] if not p.get('reviewed_at') else [f for f in ('decision', 'decision_notes', 'recommended_regimen', 'implementation_notes') if not present(p.get(f))]
+    p['missing_post'] = [] if not p.get('decision') else [f for f in ('decision_notes', 'recommended_regimen', 'implementation_notes') if not present(p.get(f))]
     p['pre_complete'] = not p['missing_pre']
     if p['missing_pre']: p['approval_blockers'].append('Complete profile: '+', '.join(p['missing_pre']))
     if p.get('status') != 'Usable result': p['approval_blockers'].append('A usable laboratory result is required')
-    p['post_complete'] = bool(p.get('reviewed_at')) and (not p['missing_post'])
+    if not p.get('discussion_status'):
+        from .discussion_status import classify_discussion
+        p['discussion_status'] = classify_discussion(None, p.get('decision'), p.get('amplified'))
+    p['post_complete'] = bool(p.get('decision')) and (not p['missing_post'])
     return p

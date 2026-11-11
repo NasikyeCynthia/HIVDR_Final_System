@@ -3,6 +3,7 @@ import json
 from .mutation_inputs import has_genotype,suggested_mutations
 from datetime import datetime
 from .import_service import present
+from .discussion_status import classify_discussion
 
 def date(value):
     if not present(value): return None
@@ -19,16 +20,17 @@ def map_history(con,pid,raw):
     sample=date(raw.get('Sample collection Date'))
     report=date(raw.get('DR_results_releaseDate'))
     resistance=any(value in {'Susceptible','Potential Low-Level Resistance','Low-Level Resistance','Intermediate Resistance','High-Level Resistance'} for key,value in raw.items() if key.startswith('Resistance to ')) or has_genotype(raw)
-    status='Usable result' if amp==1 and resistance else 'Unamplified' if amp==0 else 'Pending' if sample or report else 'Not collected'
+    status='Usable result' if amp==1 else 'Unamplified' if amp==0 else 'Pending' if kind or sample or report else 'Not collected'
+    discussion=classify_discussion(raw.get('decision Category'),raw.get('Decision'),amp)
     decision=raw.get('decision Category')
     if decision not in ('Maintained','Switched','Substituted'): decision=None
     decision_date=date(raw.get('Decision Date')) if decision else None
     regimen=raw.get('Assigned ART by switch committee') or raw.get('ART started by patient') or ''
     implemented=date(raw.get('ART start date')) if present(raw.get('ART started by patient')) and decision else None
-    con.execute('UPDATE episodes SET sample_at=?,sample_type=?,referred_at=?,report_at=?,amplified=?,status=?,failure_reason=?,mutations=?,decision=?,decision_at=?,reviewed_at=?,decision_notes=?,recommended_regimen=?,implemented_at=?,implementation_notes=? WHERE patient_id=?',
+    con.execute('UPDATE episodes SET sample_at=?,sample_type=?,referred_at=?,report_at=?,amplified=?,status=?,failure_reason=?,mutations=?,decision=?,discussion_status=?,decision_at=?,reviewed_at=?,decision_notes=?,recommended_regimen=?,implemented_at=?,implementation_notes=? WHERE patient_id=?',
        (sample,kind,date(raw.get('Date referred to DR Lab')),report,amp,status,
         'Reason not recorded in source; laboratory follow-up required' if amp==0 else '',
-        raw.get('All Mutations Combined') or suggested_mutations(raw),decision,decision_date,decision_date,
+        raw.get('All Mutations Combined') or suggested_mutations(raw),decision,discussion,decision_date,decision_date,
         'Imported documented committee decision: '+raw.get('Decision','') if decision else '',regimen,implemented,
         'Imported ART start date and patient-started regimen' if implemented else '',pid))
     flags=[key.removeprefix('PSS:') for key,val in raw.items() if key.startswith('PSS:') and str(val).lower()=='yes']

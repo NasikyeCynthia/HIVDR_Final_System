@@ -5,6 +5,7 @@ from ..core.errors import DomainError
 from ..core.database import now
 from .audit_service import audit
 from .import_service import number,line_number,present
+from .discussion_status import classify_discussion
 
 COLUMNS=json.loads((Path(__file__).resolve().parents[1]/'models/source_columns.json').read_text())
 CORE={'Age(yrs)':'age','sex':'sex','ART at sample collection(ART@VL@DR)':'regimen','Treatment Line at Sample collection':'treatment_line','VL Leading to DR':'viral_load','Adherence (%)':'adherence'}
@@ -89,12 +90,11 @@ def update_fields(con,user,p,e,data):
         dbs_reason=raw.get('DBS justification',e.get('dbs_reason') or '')
         if kind=='DBS' and not str(dbs_reason).strip():raise ValueError('A reason for using DBS is required')
         if amp==0 and not str(failure).strip():raise ValueError('An unsuccessful-test reason is required')
-        from .mutation_inputs import has_genotype
-        has_scores=any(v in valid for k,v in raw.items() if k.startswith('Resistance to ')) or has_genotype(raw)
-        status='Usable result' if amp==1 and has_scores else 'Unamplified' if amp==0 else 'Pending'
+        status='Usable result' if amp==1 else 'Unamplified' if amp==0 else 'Pending'
+        discussion=classify_discussion(raw.get('decision Category'),e.get('decision'),amp)
         con.execute('INSERT INTO lab_attempts(patient_id,actor_id,created_at,snapshot_json) VALUES(?,?,?,?)',(p['id'],user['id'],now(),json.dumps(e)))
-        con.execute('UPDATE episodes SET lab_owner=?,sample_type=?,failure_reason=?,dbs_reason=?,sample_at=?,report_at=?,amplified=?,status=?,mutations=?,interpretation_json=NULL,interpreted_at=NULL,version=version+1 WHERE patient_id=?',
-          (user['id'],kind,failure,dbs_reason,date(raw.get('Sample collection Date')),date(raw.get('DR_results_releaseDate')),amp,status,raw.get('All Mutations Combined') or e['mutations'],p['id']))
+        con.execute('UPDATE episodes SET lab_owner=?,sample_type=?,failure_reason=?,dbs_reason=?,sample_at=?,report_at=?,amplified=?,status=?,discussion_status=?,mutations=?,interpretation_json=NULL,interpreted_at=NULL,version=version+1 WHERE patient_id=?',
+          (user['id'],kind,failure,dbs_reason,date(raw.get('Sample collection Date')),date(raw.get('DR_results_releaseDate')),amp,status,discussion,raw.get('All Mutations Combined') or e['mutations'],p['id']))
     if any(key.startswith('PSS:') for key in changes):
         psy={'assessed':any(str(v).lower() in ('yes','no') for k,v in raw.items() if k.startswith('PSS:')),'factors':[k[4:] for k,v in raw.items() if k.startswith('PSS:') and str(v).lower()=='yes'],'notes':'Recorded psychosocial fields'}
         con.execute('UPDATE patients SET psychosocial_json=? WHERE id=?',(json.dumps(psy),p['id']))
@@ -115,10 +115,8 @@ def repair_existing(con):
         raw=json.loads(row['original_json'])
         if any(present(raw.get(k)) for k in ('Sample collection Date','Date referred to DR Lab','DR_results_releaseDate','Decision Date')):
             map_history(con,row['id'],raw)
-    from .mutation_inputs import has_genotype,suggested_mutations
-    for row in con.execute("SELECT p.id,p.original_json,p.source_overrides_json FROM patients p JOIN episodes e ON e.patient_id=p.id WHERE e.status='Pending' AND e.amplified=1 AND e.version=0 AND e.reviewed_at IS NULL AND e.decision IS NULL").fetchall():
-        raw=effective_record(dict(row))
-        if has_genotype(raw):con.execute("UPDATE episodes SET status='Usable result',mutations=CASE WHEN mutations='' THEN ? ELSE mutations END WHERE patient_id=?",(raw.get('All Mutations Combined') or suggested_mutations(raw),row['id']))
+    for row in con.execute("SELECT p.id FROM patients p JOIN episodes e ON e.patient_id=p.id WHERE p.source='original' AND e.amplified=1 AND e.status!='Usable result'").fetchall():
+        con.execute("UPDATE episodes SET status='Usable result' WHERE patient_id=?",(row['id'],))
     return count
 
 def overlay_changes(con,pid,changes):

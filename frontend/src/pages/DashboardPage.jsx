@@ -31,8 +31,10 @@ function SharedDatasetSelector() {
 
 export default function DashboardPage() {
   const { visiblePatients: patients, users } = useWorkspace();
-  const preIncomplete = patients.filter(patient => !patient.pre_complete);
-  const postIncomplete = patients.filter(patient => patient.reviewed_at && !patient.post_complete);
+  const preDiscussion = patients.filter(patient => patient.amplified === 1 && patient.discussion_status === 'Pending');
+  const postDecision = patients.filter(patient => patient.discussion_status === 'Done');
+  const preIncomplete = preDiscussion.filter(patient => !patient.pre_complete);
+  const postIncomplete = postDecision.filter(patient => !patient.post_complete);
   const usable = patients.filter(patient => patient.status === 'Usable result');
   const awaitingReview = usable.filter(patient => !patient.reviewed_at);
 
