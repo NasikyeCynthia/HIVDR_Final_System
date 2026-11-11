@@ -19,9 +19,6 @@ def records(con, user, include_archived=False, summary=False):
         for row in rows:
             for key in omit:row.pop(key,None)
             row['risk']={key:row['risk'][key] for key in ('total','known_total','complete','category','eligible')}
-            if user['role']=='nurse':
-                restricted={'sample_type','dbs_reason','lab_owner','lab_owner_name','status','failure_reason','report_at','amplified','mutations','repeat_requested_at','reviewed_at','reviewer','reviewer_name','decision','decision_at','recommended_regimen','implemented_at','missing_post','post_complete'}
-                for key in restricted:row.pop(key,None)
     return rows
 
 

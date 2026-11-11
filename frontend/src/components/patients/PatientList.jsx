@@ -10,7 +10,7 @@ const defaultColumns = ['ART at sample collection(ART@VL@DR)', 'Treatment Line a
 export default function PatientList({ patients, tab = 'overview', initialFilter = '', datasetView = false }) {
   const { user } = useAuth();
   const isNurse = user.role === 'nurse';
-  const nurseHiddenFilters = new Set(['missing-post','failed','awaiting-review','awaiting-implementation','usable','pending','Maintained','Substituted','Switched','Plasma','DBS']);
+  const nurseHiddenFilters = new Set();
   const filterOptions = isNurse ? options.filter(value => !nurseHiddenFilters.has(value)) : options;
   const safeInitialFilter = isNurse && nurseHiddenFilters.has(initialFilter) ? '' : initialFilter;
   const [search, setSearch] = useState('');
