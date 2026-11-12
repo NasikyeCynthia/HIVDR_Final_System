@@ -13,7 +13,7 @@ estimate is attached as a second, research-only opinion.
 
 An evidence-derived alternative is kept, unused, in evidence_risk_service.py.
 """
-SCORE_VERSION = 'prototype-2.1-ug'
+SCORE_VERSION = 'prototype-2.1-ug.2'
 BANDS = [{'from': 0, 'to': 0, 'label': 'Low'}, {'from': 30, 'to': 59, 'label': 'Intermediate'},
          {'from': 60, 'to': 180, 'label': 'High'}]
 

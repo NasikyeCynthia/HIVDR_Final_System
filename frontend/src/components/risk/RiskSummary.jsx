@@ -3,6 +3,7 @@ import Badge, { EligibilityBadge } from '../common/Badge.jsx';
 import Feedback from '../common/Feedback.jsx';
 import { useAuth, useCan } from '../../contexts/AuthContext.jsx';
 import RiskScoreCard from './RiskScoreCard.jsx';
+import ModelResults from './ModelResults.jsx';
 import ViewOnly from '../common/ViewOnly.jsx';
 import { riskService } from '../../services/riskService.js';
 import usePatientAction from '../../hooks/usePatientAction.js';
@@ -42,6 +43,7 @@ export default function RiskSummary({ patient, sessions = [], onSaved }) {
 
   return <>
     <RiskScoreCard risk={patient.risk} />
+    <ModelResults patient={patient} />
     <Card title="DR-testing eligibility" subtitle={`MoH and WHO criteria · ${e.rule_version || ''}`}>
       <div className="split-heading"><div><EligibilityBadge patient={patient} />{e.pathway && <p className="tiny muted" style={{ margin: '8px 0 0' }}>{e.pathway}</p>}</div><span className="tiny muted">{e.indication}</span></div>
       {e.next_step && <p className="notice info" style={{ marginTop: 16 }}><b>Next step: </b>{e.next_step}</p>}

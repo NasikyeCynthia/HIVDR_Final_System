@@ -10,18 +10,18 @@ def allowed(user, p):
 
 def records(con, user, include_archived=False, summary=False):
     pcols='id,external_id,source,dataset_source,name,facility,age,sex,regimen,treatment_line,viral_load,adherence,assigned_to,created_at,archived_at,archive_reason'
-    ecols='officer_name,officer_phone,risk_category,risk_flagged,eligibility_status,referral_basis,referred_at,sample_at,sample_type,dbs_reason,centrifuged_at,tubes,whole_blood_ml,storage_temp,workflow_collection,dispatched_at,received_at,plasma_volume_ml,cphl_outcome,cphl_reason,dr_lab,dr_referred_at,tested_at,attempt_no,lab_owner,status,failure_reason,report_at,amplified,repeat_requested_at,reviewed_at,reviewer,decision,discussion_status,decision_at,decision_notes,recommended_regimen,implemented_at,implementation_notes'
+    ecols='risk_ml,ttf,officer_name,officer_phone,risk_category,risk_flagged,eligibility_status,referral_basis,referred_at,sample_at,sample_type,dbs_reason,centrifuged_at,tubes,whole_blood_ml,storage_temp,workflow_collection,dispatched_at,received_at,plasma_volume_ml,cphl_outcome,cphl_reason,dr_lab,dr_referred_at,tested_at,attempt_no,lab_owner,status,failure_reason,report_at,amplified,repeat_requested_at,reviewed_at,reviewer,decision,discussion_status,decision_at,decision_notes,recommended_regimen,implemented_at,implementation_notes'
     sql='SELECT '+','.join('p.'+k for k in pcols.split(','))+','+','.join('e.'+k for k in ecols.split(','))+',u.name AS owner_name,lab.name AS lab_owner_name,clinician.name AS reviewer_name FROM patients p LEFT JOIN users u ON p.assigned_to=u.id JOIN episodes e ON e.patient_id=p.id LEFT JOIN users lab ON lab.id=e.lab_owner LEFT JOIN users clinician ON clinician.id=e.reviewer'
     args=()
     rows=[decorate(dict(r)) for r in con.execute(sql,args).fetchall() if include_archived or not dict(r).get('archived_at')]
     if summary:
         omit={'psychosocial','interpretation','approval_blockers','decision_notes','recommended_regimen','implementation_notes',
-              'centrifuged_at','tubes','whole_blood_ml','storage_temp','workflow_collection','plasma_volume_ml','cphl_reason','dr_referred_at','attempt_no','tested_at','dispatched_at','referral_basis','dbs_reason',
+              'centrifuged_at','tubes','whole_blood_ml','storage_temp','workflow_collection','plasma_volume_ml','cphl_reason','dr_referred_at','tested_at','dispatched_at','referral_basis','dbs_reason',
               'eligibility_status','risk_category','risk_flagged'}
         for row in rows:
             for key in omit:row.pop(key,None)
             row['eligibility']={'status':row['eligibility']['status']}
-            row['risk']={'category':row['risk']['category'],'flagged':row['risk']['flagged'],'total':row['risk'].get('total')}
+            row['risk']={'category':row['risk']['category'],'flagged':row['risk']['flagged'],'total':row['risk'].get('total'),'ml':row.pop('risk_ml',None)}
             row['lab']={'stage':row['lab']['stage'],'flag_count':sum(f['level']=='error' for f in row['lab']['flags'])}
     return rows
 
@@ -36,6 +36,7 @@ def decorate(p):
     from .lab_service import assess as lab_assess
     p['lab'] = lab_assess(p)
     p['approval_blockers'] = []
+    p['ttf'] = json.loads(p['ttf']) if isinstance(p.get('ttf'), str) and p['ttf'] else None
     risk = json.loads(p.pop('risk_json', None) or 'null')
     p['risk'] = risk or {'category': p.get('risk_category') or 'Not assessed', 'flagged': bool(p.get('risk_flagged'))}
     p['suggestion'] = json.loads(p.pop('suggestion_json', None) or 'null')

@@ -28,14 +28,42 @@ export default function PatientTable({ patients, tab = 'overview', datasetView =
     {!isNurse&&<td>{patient.decision || patient.discussion_status || 'Blank'}<div><Badge color={patient.implemented_at ? 'green' : patient.discussion_status === 'Pending' ? 'yellow' : patient.discussion_status === 'Done' ? 'green' : ''}>{patient.implemented_at ? 'Implemented' : patient.discussion_status || 'Blank'}</Badge></div></td>}
     <td><Link className="text-link" to={`/patients/${patient.id}?tab=${patient.pre_complete ? 'record' : 'profile'}`}>{patient.pre_complete ? 'Open →' : 'Complete profile →'}</Link></td>
   </tr>)}</tbody></table>{!patients.length && <div className="empty">No records match this view.</div>}</div>;
-  if (tab === 'risk') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>ARV regimen</th><th>Treatment line</th><th>Viral load</th><th>Risk / DR-test eligibility</th><th /></tr></thead><tbody>{patients.map(patient => <tr key={patient.id}>
-    <td className="patient-cell">{patient.external_id}<small>{patient.name}</small></td>
-    <td>{patient.regimen || 'Not recorded'}</td>
-    <td>{patient.treatment_line ? `Line ${patient.treatment_line}` : 'Not recorded'}</td>
-    <td>{patient.viral_load == null ? 'Not recorded' : Number(patient.viral_load).toLocaleString()}</td>
-    <td><RiskBadge risk={patient.risk} /><div style={{ marginTop: 5 }}><EligibilityBadge patient={patient} /></div></td>
+  const empty = !patients.length && <div className="empty">No records match this view.</div>;
+  const id = patient => <td className="patient-cell">{patient.external_id}<small>{patient.name}</small></td>;
+  // Risk assessment: only the variables used for risk and DR-test eligibility.
+  if (tab === 'risk') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Viral load</th><th>Adherence</th><th>Treatment line</th><th>Risk score</th><th>DR-test eligibility</th><th>Resistance estimate</th><th>Time to failure</th><th /></tr></thead><tbody>{patients.map(patient => <tr key={patient.id}>
+    {id(patient)}
+    <td>{patient.viral_load == null ? '—' : Number(patient.viral_load).toLocaleString()}</td>
+    <td>{patient.adherence == null ? '—' : `${patient.adherence}%`}</td>
+    <td>{patient.treatment_line ? `Line ${patient.treatment_line}` : '—'}</td>
+    <td><RiskBadge risk={patient.risk} />{patient.risk?.total != null && <div className="tiny muted">{patient.risk.total} points</div>}</td>
+    <td><EligibilityBadge patient={patient} /></td>
+    <td>{patient.risk?.ml == null ? '—' : <Badge color={patient.risk.ml >= 0.64 ? 'red' : ''}>{Math.round(patient.risk.ml * 100)}%</Badge>}</td>
+    <td>{Array.isArray(patient.ttf) ? `${patient.ttf[0].toFixed(0)} months` : '—'}</td>
     <td><Link className="text-link" to={`/patients/${patient.id}?tab=risk`}>Open →</Link></td>
-  </tr>)}</tbody></table>{!patients.length && <div className="empty">No records match this view.</div>}</div>;
+  </tr>)}</tbody></table>{empty}</div>;
+  // Laboratory: only sample and result variables.
+  if (tab === 'laboratory') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Sample type</th><th>Stage</th><th>Outcome</th><th>Waiting / turnaround</th><th>Laboratory officer</th><th /></tr></thead><tbody>{patients.map(patient => {
+    const waiting = patient.status === 'Pending' && patient.received_at ? Math.floor((Date.now() - new Date(patient.received_at)) / 86400000) : null;
+    return <tr key={patient.id}>
+      {id(patient)}
+      <td>{patient.sample_type || '—'}</td>
+      <td>{patient.lab?.stage || '—'}{patient.lab?.flag_count ? <div><Badge color="red">{patient.lab.flag_count} quality problem(s)</Badge></div> : null}</td>
+      <td><Badge color={patient.status === 'Usable result' ? 'green' : ['Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'].includes(patient.status) ? 'red' : ''}>{patient.status}</Badge>{patient.failure_reason && patient.status !== 'Usable result' ? <div className="tiny muted">{patient.failure_reason}</div> : null}</td>
+      <td>{waiting != null ? <Badge color={waiting > 30 ? 'red' : 'yellow'}>{waiting} days at lab</Badge> : patient.report_at && patient.received_at ? `${Math.max(0, Math.round((new Date(patient.report_at) - new Date(patient.received_at)) / 86400000))} days` : '—'}</td>
+      <td>{patient.officer_name || patient.lab_owner_name || '—'}{patient.officer_phone ? <div className="tiny muted">{patient.officer_phone}</div> : null}</td>
+      <td><Link className="text-link" to={`/patients/${patient.id}?tab=laboratory`}>Open →</Link></td>
+    </tr>; })}</tbody></table>{empty}</div>;
+  // Discussion: only what the committee needs to decide and follow up.
+  if (tab === 'discussion') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Regimen</th><th>Laboratory result</th><th>Profile</th><th>Decision</th><th>Implementation</th><th /></tr></thead><tbody>{patients.map(patient => <tr key={patient.id}>
+    {id(patient)}
+    <td>{patient.regimen || '—'}<div className="tiny muted">{patient.treatment_line ? `Line ${patient.treatment_line}` : ''}</div></td>
+    <td><Badge color={patient.status === 'Usable result' ? 'green' : ''}>{patient.status}</Badge></td>
+    <td><Badge color={patient.pre_complete ? 'green' : 'yellow'}>{patient.pre_complete ? 'Complete' : `Incomplete · ${patient.missing_pre?.length || 0}`}</Badge></td>
+    <td>{patient.decision ? <Badge color={patient.decision === 'Maintained' ? 'green' : 'red'}>{patient.decision}</Badge> : <span className="muted">{patient.discussion_status || 'Not discussed'}</span>}</td>
+    <td>{patient.decision ? <Badge color={patient.implemented_at ? 'green' : 'yellow'}>{patient.implemented_at ? 'Implemented' : 'Awaiting'}</Badge> : '—'}</td>
+    <td><Link className="text-link" to={`/patients/${patient.id}?tab=discussion`}>Open →</Link></td>
+  </tr>)}</tbody></table>{empty}</div>;
   return <div className="table-wrap"><table><thead><tr><th>Patient / ID</th><th>Regimen</th><th>Risk / DR-test eligibility</th>{!isNurse&&<th>Laboratory</th>}<th>Profile / care worker</th><th /></tr></thead><tbody>{patients.map(patient => <tr key={patient.id}>
     <td className="patient-cell">{patient.name}<small>{patient.external_id} · {patient.source}</small></td>
     <td>{patient.regimen || 'Not recorded'}<div className="tiny muted">{patient.facility}</div></td>

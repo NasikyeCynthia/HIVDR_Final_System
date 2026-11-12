@@ -1,6 +1,5 @@
 import RecordEditor from '../components/patients/RecordEditor.jsx';
 import ArchiveControl from '../components/patients/ArchiveControl.jsx';
-import MLPrediction from '../components/risk/MLPrediction.jsx';
 import LaboratoryHistory from '../components/lab/LaboratoryHistory.jsx';
 import InterpretationPanel from '../components/resistance/InterpretationPanel.jsx';
 import PsychosocialForm from '../components/patients/PsychosocialForm.jsx';
@@ -48,7 +47,6 @@ export default function PatientDetailPage() {
     {tab === 'record' && <RecordEditor patient={patient} sections={detail.record_sections} onSaved={onSaved}/>}
     {tab === 'viral-load' && <ViralLoadHistory patient={patient} record={detail.current_record} onSaved={onSaved}/>}
     {tab === 'risk' && <RiskSummary patient={patient} sessions={detail.iac_sessions||[]} onSaved={onSaved} />}
-    {tab === 'risk' && <MLPrediction patient={patient}/>}
     {tab === 'laboratory' && <><p className="notice info">All recorded drug-level results and laboratory fields are available under Record details - Laboratory.</p><LaboratoryForm patient={patient} onSaved={onSaved}/><LaboratoryHistory entries={detail.lab_history||[]}/></>}
     {tab === 'resistance' && <InterpretationPanel patient={patient} record={detail.current_record} onSaved={onSaved}/>}
     {tab === 'psychosocial' && <PsychosocialForm patient={patient} onSaved={onSaved}/>}

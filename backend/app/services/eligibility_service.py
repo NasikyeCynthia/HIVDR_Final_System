@@ -27,7 +27,7 @@ import math
 import re
 from datetime import date, datetime, timedelta
 
-RULE_VERSION = 'moh-who-hivdr-eligibility-2026.1'
+RULE_VERSION = 'moh-who-hivdr-eligibility-2026.2'
 
 NONSUPPRESSED_AT = 1000             # copies/mL; WHO 2021 uses >=1000 (MoH text says >1000; the WHO bound is used) [WHO-2021]
 UNDETECTABLE_BELOW = 50             # copies/mL; Hoima basic-facts slide 11
@@ -265,6 +265,17 @@ def assess(patient, raw, episode=None, sessions=(), today=None):
         'sources': SOURCES,
     }
 
+    # Time to treatment failure on the current regimen: first VL >=1000 at least 1 month after it started
+    # (an earlier high VL reflects failure carried over from the previous regimen). Descriptive only.
+    current_start = parse_date(raw.get('ART@VL@DR start date'))
+    result['time_to_failure'] = None
+    if current_start:
+        first_fail = next((o for o in timeline if o['kind'] == 'pre' and nonsuppressed(o)
+                           and (o['date'] - current_start).days >= 30), None)
+        if first_fail:
+            result['time_to_failure'] = {'regimen_start': current_start.isoformat(), 'failure_date': first_fail['date'].isoformat(),
+                                         'months': round((first_fail['date'] - current_start).days / 30.44, 1)}
+
     def finish(status, next_step):
         result['status'] = status
         result['label'] = STATUS_LABELS[status]
@@ -459,8 +470,12 @@ def refresh(con, pid):
     result = assess(p, raw, dict(e), sessions)
     from .risk_service import score
     risk = score(p, raw, sessions, result)
-    con.execute('UPDATE episodes SET eligibility_status=?,eligibility_json=?,risk_category=?,risk_flagged=?,risk_json=? WHERE patient_id=?',
-                (result['status'], json.dumps(result, default=str), risk['category'], int(risk['flagged']), json.dumps(risk), pid))
+    ttf = result.get('time_to_failure')
+    ml = risk.get('ml') or {}
+    con.execute('UPDATE episodes SET eligibility_status=?,eligibility_json=?,risk_category=?,risk_flagged=?,risk_json=?,risk_ml=?,ttf=? WHERE patient_id=?',
+                (result['status'], json.dumps(result, default=str), risk['category'], int(risk['flagged']), json.dumps(risk),
+                 round(ml['probability'], 3) if ml.get('available') else None,
+                 json.dumps([ttf['months'], ttf['regimen_start'], ttf['failure_date']]) if ttf else None, pid))
     return result
 
 
