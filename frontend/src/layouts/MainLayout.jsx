@@ -29,7 +29,7 @@ export default function MainLayout() {
             {loading ? 'Refreshing…' : '↻ Refresh'}
           </button>
         </div>
-        {canAccessAll && <p className="tiny muted">You can view all facilities or select one. Changes are limited to your role at your own facility ({user.facility}).</p>}
+        {canAccessAll && <p className="tiny muted">{user.edit_any_facility ? 'All facilities: view any facility or select one; you can make the changes your role allows for any patient.' : `You can view all facilities. Changes are limited to your role at your own facility (${user.facility}).`}</p>}
         {!canAccessAll && !facilities.length && <p className="notice info">
           Your assigned facility has no records in the selected dataset. Ask an administrator to assign your account to a facility with records.
           Viewing access does not grant permission to edit or approve at other facilities.

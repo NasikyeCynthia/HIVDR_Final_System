@@ -6,6 +6,7 @@ class PatientCreate(StrictModel):
     external_id: str = Field(min_length=1, max_length=100)
     name: str = Field(default='', max_length=200)
     dataset_source: Literal['original', 'synthetic'] = 'original'
+    facility: str = Field(default='', max_length=200)
     fields: dict[str, str] = Field(default_factory=dict)
 
 class ProfileUpdate(StrictModel):

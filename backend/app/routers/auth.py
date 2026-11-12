@@ -35,8 +35,8 @@ def login(data: LoginRequest, request: Request, response: Response):
 
 @router.get('/me')
 def me(user=Depends(current_user)):
-    from ..core.permissions import for_user
-    return {**user, 'permissions': for_user(user)}
+    from ..core.permissions import for_user, any_facility
+    return {**user, 'permissions': for_user(user), 'edit_any_facility': any_facility(user)}
 
 @router.post('/logout')
 def logout(response: Response, session: str | None = Cookie(default=None), user=Depends(current_user)):

@@ -35,7 +35,7 @@ function choiceField(key) {
 }
 
 export default function RegisterPatientForm({ onCancel }) {
-  const { refresh, source } = useWorkspace();
+  const { refresh, source, facility, facilities = [] } = useWorkspace();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [columns, setColumns] = useState([]);
@@ -86,6 +86,7 @@ export default function RegisterPatientForm({ onCancel }) {
         external_id: formData.get('external_id'),
         name: formData.get('name') || '',
         dataset_source: source,
+        facility: formData.get('facility') || '',
         fields,
       });
       await refresh();
@@ -103,7 +104,7 @@ export default function RegisterPatientForm({ onCancel }) {
         <div className="field"><label htmlFor="new-patient-id">Unique patient ID (Patient No.)</label><input id="new-patient-id" name="external_id" required maxLength="100" /></div>
         <div className="field"><label htmlFor="new-patient-name">Patient name / display label</label><input id="new-patient-name" name="name" maxLength="200" /></div>
       </div>
-      <p className="tiny muted">Facility is assigned from your account: <b>{user.facility}</b>. This registration will appear in the currently selected <b>{source === 'synthetic' ? 'Synthetic' : 'Original'}</b> dataset. The ID and facility are added automatically.</p>
+      {user.edit_any_facility ? <div className="field"><label htmlFor="new-patient-facility">Facility</label><input id="new-patient-facility" name="facility" list="facility-options" required defaultValue={facility && facility !== 'all' ? facility : user.facility} maxLength="200" /><datalist id="facility-options">{facilities.map(f => <option key={f} value={f} />)}</datalist></div> : <p className="tiny muted">Facility is assigned from your account: <b>{user.facility}</b>.</p>}<p className="tiny muted">This registration will appear in the currently selected <b>{source === 'synthetic' ? 'Synthetic' : 'Original'}</b> dataset.</p>
       {!columns.length ? <p className="muted">Loading dataset fields…</p> : <>
         <p className="notice info">The form includes the CSV’s demographic, treatment, drug exposure, viral-load history, psychosocial and follow-up fields. Laboratory results and committee decisions are shown as separate locked sections; enter those through the lab and decision workflows.</p>
         {groupOrder.filter(group => grouped[group]?.length || group === 'Viral load history').map(group => <details className="registration-section" key={group} open={['Patient background','Treatment history','Viral load history'].includes(group)}>

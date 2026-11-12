@@ -24,7 +24,7 @@ export default function PsychosocialForm({ patient, onSaved }) {
   const action = usePatientAction(onSaved);
   const data = patient.psychosocial || {};
   const permitted = can('record_psychosocial', patient);
-  const assignedOk = !patient.assigned_to || patient.assigned_to === user.id;
+  const assignedOk = Boolean(user.edit_any_facility) || !patient.assigned_to || patient.assigned_to === user.id;
   function submit(e) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);

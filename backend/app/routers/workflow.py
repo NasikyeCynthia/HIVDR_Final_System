@@ -39,7 +39,8 @@ def psychosocial(patient_id:int,data:PsychosocialUpdate,user=Depends(current_use
         p,e=load_patient(con,user,patient_id)
         from ..core.permissions import require
         require(user,'record_psychosocial',p)
-        if p['assigned_to'] not in (None,user['id']):
+        from ..core.config import ALL_FACILITIES
+        if not ALL_FACILITIES and p['assigned_to'] not in (None,user['id']):
             raise DomainError('Only the assigned nurse/counsellor can update this assessment',403)
         from ..services.psychosocial_service import FACTORS
         unknown=[f for f in data.factors if f not in FACTORS]

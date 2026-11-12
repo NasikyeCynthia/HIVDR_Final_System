@@ -6,8 +6,7 @@ export default function Topbar() {
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const title = navigation.find(([path]) => pathname.startsWith(path))?.[1] || 'Workspace';
-  const accountScope = user.role === 'nurse'
-    ? `Nurse · All facilities view · Edits: ${user.facility}`
-    : `${user.role} · ${user.facility}`;
+  const role = { nurse: 'Nurse', counsellor: 'Counsellor', lab: 'Laboratory', clinician: 'Clinician', admin: 'Administrator' }[user.role] || user.role;
+  const accountScope = user.edit_any_facility ? `${role} · All facilities` : `${role} · ${user.facility}`;
   return <header className="topbar"><div className="breadcrumb">Workspace / <strong>{title}</strong></div><div className="top-actions"><Badge color="teal">LOCAL PROTOTYPE</Badge><Link to="/notifications" title="Notifications">♧</Link><div className="account"><div className="avatar">{user.name.split(' ').map(word => word[0]).slice(0, 2).join('')}</div><div><b>{user.name}</b><small>{accountScope}</small></div></div><button className="text-link" onClick={() => logout().catch(() => {})}>Sign out</button></div></header>;
 }

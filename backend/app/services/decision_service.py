@@ -55,7 +55,8 @@ def approve_decision(con, user, p, e, data):
 def implement_decision(con, user, p, e, data):
     require(user, 'implement_decision', p)
     pid = p['id']
-    if p.get('assigned_to') not in (None, user['id']):
+    from ..core.config import ALL_FACILITIES
+    if not ALL_FACILITIES and p.get('assigned_to') not in (None, user['id']):
         raise DomainError('Only the nurse/counsellor assigned to this patient can record implementation', 403)
     if not e['decision']:
         raise ValueError('There is no approved decision to implement')

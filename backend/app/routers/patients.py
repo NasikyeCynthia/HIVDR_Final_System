@@ -33,8 +33,6 @@ def patient_table(ids: list[int]=Query(...), fields: list[str]=Query(default=[])
     placeholders=','.join('?' for _ in ids)
     sql=f'SELECT id,facility,original_json,source_overrides_json FROM patients WHERE id IN ({placeholders})'
     args=list(ids)
-    if user['role'] not in ('admin', 'nurse') and not user.get('can_access_all'):
-        sql+=' AND facility=?';args.append(user['facility'])
     with connect() as con:
         rows=con.execute(sql,args).fetchall()
         if len(rows)!=len(set(ids)):
@@ -64,9 +62,11 @@ def create_patient(data: PatientCreate, user=Depends(current_user)):
         if len(value)>20000:
             raise DomainError('Dataset field is too long: '+key,400)
         fields[key]=value.strip()
-    raw={'Patient No.':external_id,'Facility':user['facility'],**fields}
+    from ..core.permissions import any_facility
+    facility = data.facility.strip() if data.facility.strip() and any_facility(user) else user['facility']
+    raw={'Patient No.':external_id,'Facility':facility,**fields}
     with connect() as con:
-        cur = con.execute('INSERT INTO patients(external_id,source,dataset_source,name,facility,assigned_to,original_json,created_at) VALUES(?,?,?,?,?,?,?,?)', (external_id, 'manual', data.dataset_source, data.name.strip() or 'Patient '+external_id, user['facility'], user['id'], json.dumps(raw), now()))
+        cur = con.execute('INSERT INTO patients(external_id,source,dataset_source,name,facility,assigned_to,original_json,created_at) VALUES(?,?,?,?,?,?,?,?)', (external_id, 'manual', data.dataset_source, data.name.strip() or 'Patient '+external_id, facility, user['id'], json.dumps(raw), now()))
         con.execute('INSERT INTO episodes(patient_id) VALUES(?)', (cur.lastrowid,))
         sync_core(con,cur.lastrowid,raw)
         from ..services.eligibility_service import refresh

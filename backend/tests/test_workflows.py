@@ -324,9 +324,14 @@ class WorkflowTests(unittest.TestCase):
         r=self.client.put('/api/lab/1/result',json={**res,'nrti':'M184V','correction_reason':'K65R was entered in error'})
         self.assertEqual(r.status_code,200,r.text)
         self.assertEqual(self.client.get('/api/patients/1').json()['patient']['mutations'],'RT:M184V RT:K103N')
-        # a laboratory account at another facility can only record with all-facility (central lab) access
+        # with all-facility editing switched on (the default demo setting) any lab account may edit anywhere
         with database.connect() as con:
             con.execute("UPDATE patients SET facility='Other Facility' WHERE id=1")
+        self.assertEqual(self.client.put('/api/lab/1/result',json={**res,'correction_reason':'Demo mode edit at another facility'}).status_code,200)
+        # with it switched off, only a central-laboratory account may
+        from app.core import config
+        config.ALL_FACILITIES = False
+        self.addCleanup(setattr, config, 'ALL_FACILITIES', True)
         self.assertEqual(self.client.put('/api/lab/1/result',json={**res,'correction_reason':'Central lab correction test'}).status_code,403)
         with database.connect() as con:
             con.execute("UPDATE users SET can_access_all=1 WHERE username='lab'")

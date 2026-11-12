@@ -31,6 +31,9 @@ class ServiceTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_role_assignment_and_facility_permissions(self):
+        from app.core import config  # facility limits apply only when all-facility editing is off
+        config.ALL_FACILITIES = False
+        self.addCleanup(setattr, config, 'ALL_FACILITIES', True)
         with database.connect() as con:
             con.execute('UPDATE patients SET assigned_to=? WHERE id=2', (self.users['nurse']['id'],))
         with self.assertRaises(DomainError) as error:

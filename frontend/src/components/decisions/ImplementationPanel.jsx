@@ -19,7 +19,7 @@ export default function ImplementationPanel({ patient, followUps = [], onSaved }
   const can = useCan();
   const impl = usePatientAction(onSaved);
   const follow = usePatientAction(onSaved);
-  const assignedOk = !patient.assigned_to || patient.assigned_to === user.id;
+  const assignedOk = Boolean(user.edit_any_facility) || !patient.assigned_to || patient.assigned_to === user.id;
   const canImplement = can('implement_decision', patient) && assignedOk;
   const changesRegimen = ['Switched', 'Substituted'].includes(patient.decision);
   const due = followUps.find(f => !f.assessed_on);

@@ -32,6 +32,12 @@ LABELS = {
 }
 
 
+def any_facility(user):
+    """True when this user may make (role-permitted) changes at any facility."""
+    from .config import ALL_FACILITIES
+    return ALL_FACILITIES or central_lab(user) or user.get('role') == 'admin'
+
+
 def central_lab(user):
     """Laboratory accounts granted all facilities (e.g. CPHL or the DR laboratory) record laboratory steps for every facility."""
     return user.get('role') == 'lab' and bool(user.get('can_access_all'))
@@ -45,7 +51,7 @@ def require(user, action, patient=None):
     if not can(user, action):
         roles = ' or '.join(ACTIONS[action])
         raise DomainError(f'View only: {LABELS[action].lower()} requires a {roles} account.', 403)
-    if patient is not None and user.get('role') != 'admin' and not central_lab(user) and user.get('facility') != patient.get('facility'):
+    if patient is not None and not any_facility(user) and user.get('facility') != patient.get('facility'):
         raise DomainError('View only: changes must be made by staff at the patient’s facility.', 403)
 
 
