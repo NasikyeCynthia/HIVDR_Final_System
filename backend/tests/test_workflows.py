@@ -83,9 +83,17 @@ class WorkflowTests(unittest.TestCase):
         p=self.client.get('/api/patients/1').json()
         self.assertEqual(p['patient']['lab']['stage'],'Result released')
         self.assertEqual(len(p['lab_history']),2)
+        self.assertEqual(p['patient']['suggested_mutations'], 'RT:M184V')
+        self.assertIsNotNone(p['patient']['interpretation'])
+        correction={'correction_reason':'Correct laboratory mutation transcription','outcome':'Usable result','tested_at':'2026-10-20','released_at':'2026-10-21','mutations':'RT:K65R'}
+        r=self.client.put('/api/lab/1/result',json=correction)
+        self.assertEqual(r.status_code,200,r.text)
+        latest=self.client.get('/api/patients/1').json()['patient']
+        self.assertIsNone(latest['interpretation'])
+        self.assertEqual(latest['suggested_mutations'],'RT:K65R')
 
     def test_adapter_strips_fasta_identifiers_and_handles_failure(self):
-        result={'data':{'currentVersion':{'text':'fixture'},'sequenceAnalysis':[{'validationResults':[],'drugResistance':[{'drugScores':[{'score':0}]}]}]}}
+        result={'data':{'currentVersion':{'text':'fixture'},'sequenceAnalysis':[{'validationResults':[],'drugResistance':[{'gene':{'name':'RT'},'drugScores':[{'score':0,'level':1,'drug':{'displayAbbr':'TDF'}}]}]}]}}
         def response(req,timeout):
             payload=json.loads(req.data)
             self.assertEqual(payload['variables']['sequences'][0]['header'],'analysis')

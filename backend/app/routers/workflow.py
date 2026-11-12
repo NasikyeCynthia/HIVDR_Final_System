@@ -60,13 +60,15 @@ def interpret(patient_id:int,data:InterpretationRequest,user=Depends(current_use
         require(user,'interpret_resistance',p)
         if e['status']!='Usable result': raise DomainError('A usable laboratory result is required')
         version=e['version']
+        if e['decision']: raise DomainError('Approved interpretation is locked. Start an amendment workflow.',409)
     result=stanford_service.analyze(data.kind,data.text)
     with connect() as con:
         p,current=load_patient(con,user,patient_id)
+        require(user,'interpret_resistance',p)
         if current['version']!=version or current['status']!='Usable result':
             raise DomainError('Lab result changed during analysis. Please rerun.',409)
         if current['decision']: raise DomainError('Approved interpretation is locked. Start an amendment workflow.',409)
-        con.execute('UPDATE episodes SET interpretation_json=?,interpreted_at=? WHERE patient_id=?',(json.dumps(result),now(),patient_id))
+        con.execute('UPDATE episodes SET interpretation_json=?,interpreted_at=?,suggestion_json=NULL,version=version+1 WHERE patient_id=?',(json.dumps(result),now(),patient_id))
         audit(con,user,'Stanford interpretation',patient_id,after={'kind':data.kind,'version':result.get('version')})
     return result
 
