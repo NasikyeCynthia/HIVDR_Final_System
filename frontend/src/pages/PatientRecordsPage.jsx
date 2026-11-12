@@ -9,7 +9,7 @@ export default function PatientRecordsPage() {
   const { user } = useAuth();
   const { visiblePatients } = useWorkspace();
   const [params] = useSearchParams();
-  const [registering, setRegistering] = useState(false);
+  const [registering, setRegistering] = useState(params.get('register') === '1');
   const filter = params.get('filter') || '';
   const cohort = params.get('cohort');
   const cohortPatients = cohort === 'eligible' ? visiblePatients.filter(p=>p.eligibility?.status==='eligible'||p.referred_at) : cohort === 'reviewed' ? visiblePatients.filter(p=>p.reviewed_at) : visiblePatients;
