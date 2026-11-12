@@ -338,4 +338,28 @@ class WorkflowTests(unittest.TestCase):
         self.login('lab')
         self.assertEqual(self.client.put('/api/lab/1/result',json={**res,'correction_reason':'Central lab correction test'}).status_code,200)
 
+    def test_register_with_viral_load_sample_then_record_result(self):
+        self.login('nurse')
+        r=self.client.post('/api/patients',json={'external_id':'VL-NEW-1','name':'New patient','dataset_source':'synthetic',
+            'fields':{'Age(yrs)':'30','ART at sample collection(ART@VL@DR)':'TDF-3TC-DTG','Treatment Line at Sample collection':'First Line'},
+            'vl_sample':{'collected_on':'2026-11-01','indication':'Routine'}})
+        self.assertEqual(r.status_code,200,r.text); pid=r.json()['id']
+        detail=self.client.get(f'/api/patients/{pid}').json()
+        self.assertEqual([s['status'] for s in detail['vl_samples']],['Pending'])
+        sid=detail['vl_samples'][0]['id']
+        self.assertTrue(any('Viral load result awaited' in x for item in self.client.get('/api/notifications').json() if item['patient_id']==pid for x in item['reasons']))
+        self.login('clinician')
+        self.assertEqual(self.client.put(f'/api/patients/{pid}/vl-samples/{sid}/result',json={'result':'25000','result_date':'2026-11-05'}).status_code,403)
+        self.login('lab')
+        self.assertEqual(self.client.put(f'/api/patients/{pid}/vl-samples/{sid}/result',json={'result':'high','result_date':'2026-11-05'}).status_code,400)
+        r=self.client.put(f'/api/patients/{pid}/vl-samples/{sid}/result',json={'result':'25000','result_date':'2026-11-05'})
+        self.assertEqual(r.status_code,200,r.text)
+        detail=self.client.get(f'/api/patients/{pid}').json()
+        self.assertEqual(detail['patient']['viral_load'],25000)
+        self.assertEqual(detail['patient']['eligibility']['timeline'][-1]['copies'],25000)
+        self.assertEqual(self.client.put(f'/api/patients/{pid}/vl-samples/{sid}/result',json={'result':'400','result_date':'2026-11-05'}).status_code,400)  # correction needs reason
+        r=self.client.put(f'/api/patients/{pid}/vl-samples/{sid}/result',json={'result':'400','result_date':'2026-11-05','correction_reason':'Result transcribed wrongly'})
+        self.assertEqual(r.status_code,200,r.text)
+        self.assertEqual(self.client.get(f'/api/patients/{pid}').json()['patient']['viral_load'],400)
+
 if __name__=='__main__': unittest.main()

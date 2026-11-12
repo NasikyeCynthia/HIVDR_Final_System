@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, Query
 from ..core.database import connect, now
 from ..core.dependencies import current_user
 from ..core.errors import DomainError
-from ..schemas.patient import PatientCreate, ProfileUpdate, AssignmentRequest
+from ..schemas.patient import PatientCreate, ProfileUpdate, AssignmentRequest, VLSampleCreate, VLResult
+from ..services import vl_service
 from ..services.patient_service import records, decorate
 from ..services.profile_service import update_profile, assign_care_worker
 from ..services.workflow_service import load_patient, change_patient
@@ -70,6 +71,10 @@ def create_patient(data: PatientCreate, user=Depends(current_user)):
         con.execute('INSERT INTO episodes(patient_id) VALUES(?)', (cur.lastrowid,))
         sync_core(con,cur.lastrowid,raw)
         from ..services.eligibility_service import refresh
+        if data.vl_sample:
+            p_row = dict(con.execute('SELECT * FROM patients WHERE id=?', (cur.lastrowid,)).fetchone())
+            e_row = dict(con.execute('SELECT * FROM episodes WHERE patient_id=?', (cur.lastrowid,)).fetchone())
+            vl_service.record_sample(con, user, p_row, e_row, data.vl_sample.model_dump())
         refresh(con,cur.lastrowid)
         audit(con, user, 'register', cur.lastrowid, after={'dataset_fields_provided':len(fields)})
         return {'id': cur.lastrowid}
@@ -90,7 +95,7 @@ def get_patient(patient_id: int, user=Depends(current_user)):
         follow_ups = [dict(r) for r in con.execute('SELECT f.*,u.name AS actor FROM follow_ups f LEFT JOIN users u ON f.actor_id=u.id WHERE patient_id=? ORDER BY due_date',(patient_id,))]
         iac_sessions = [dict(r) for r in con.execute('SELECT s.*,u.name AS actor FROM iac_sessions s LEFT JOIN users u ON s.actor_id=u.id WHERE patient_id=? ORDER BY s.session_date,s.id',(patient_id,))]
         lab_history = [dict(r) for r in con.execute('SELECT a.id,a.created_at,a.snapshot_json,u.name AS actor FROM lab_attempts a LEFT JOIN users u ON a.actor_id=u.id WHERE patient_id=? ORDER BY a.id DESC',(patient_id,))]
-        return {'patient': patient, 'original': original, 'current_record': current_record, 'record_sections': sections({**p,**e},user), 'review_history': review_history, 'discussion': discussion, 'lab_history': lab_history, 'iac_sessions': iac_sessions, 'follow_ups': follow_ups}
+        return {'patient': patient, 'original': original, 'current_record': current_record, 'record_sections': sections({**p,**e},user), 'review_history': review_history, 'discussion': discussion, 'lab_history': lab_history, 'iac_sessions': iac_sessions, 'follow_ups': follow_ups, 'vl_samples': vl_service.list_samples(con, patient_id), 'vl_indications': vl_service.INDICATIONS}
 
 @router.patch('/{patient_id}/profile')
 def save_profile(patient_id: int, data: ProfileUpdate, user=Depends(current_user)):
@@ -99,3 +104,13 @@ def save_profile(patient_id: int, data: ProfileUpdate, user=Depends(current_user
 @router.patch('/{patient_id}/assignment')
 def save_assignment(patient_id: int, data: AssignmentRequest, user=Depends(current_user)):
     return change_patient(patient_id, user, data.model_dump(), assign_care_worker)
+
+
+@router.post('/{patient_id}/vl-samples')
+def add_vl_sample(patient_id: int, data: VLSampleCreate, user=Depends(current_user)):
+    return change_patient(patient_id, user, data.model_dump(), vl_service.record_sample)
+
+
+@router.put('/{patient_id}/vl-samples/{sample_id}/result')
+def add_vl_result(patient_id: int, sample_id: int, data: VLResult, user=Depends(current_user)):
+    return change_patient(patient_id, user, {**data.model_dump(), 'sample_id': sample_id}, vl_service.record_result)

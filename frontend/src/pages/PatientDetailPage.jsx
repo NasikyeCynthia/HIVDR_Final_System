@@ -45,7 +45,7 @@ export default function PatientDetailPage() {
     {tab === 'overview' && <><PatientOverview patient={patient} users={users} onSaved={onSaved}/><ArchiveControl patient={patient} onSaved={onSaved}/></>}
     {tab === 'profile' && <><ProfileForm patient={patient} onSaved={onSaved}/><RecordEditor patient={patient} sections={detail.record_sections} onSaved={onSaved}/></>}
     {tab === 'record' && <RecordEditor patient={patient} sections={detail.record_sections} onSaved={onSaved}/>}
-    {tab === 'viral-load' && <ViralLoadHistory patient={patient} record={detail.current_record} onSaved={onSaved}/>}
+    {tab === 'viral-load' && <ViralLoadHistory patient={patient} record={detail.current_record} samples={detail.vl_samples || []} indications={detail.vl_indications || []} onSaved={onSaved}/>}
     {tab === 'risk' && <RiskSummary patient={patient} sessions={detail.iac_sessions||[]} onSaved={onSaved} />}
     {tab === 'laboratory' && <><p className="notice info">All recorded drug-level results and laboratory fields are available under Record details - Laboratory.</p><LaboratoryForm patient={patient} onSaved={onSaved}/><LaboratoryHistory entries={detail.lab_history||[]}/></>}
     {tab === 'resistance' && <InterpretationPanel patient={patient} record={detail.current_record} onSaved={onSaved}/>}

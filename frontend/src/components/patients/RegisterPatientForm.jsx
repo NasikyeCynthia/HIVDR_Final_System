@@ -87,6 +87,7 @@ export default function RegisterPatientForm({ onCancel }) {
         name: formData.get('name') || '',
         dataset_source: source,
         facility: formData.get('facility') || '',
+        vl_sample: formData.get('vl_collected_on') ? { collected_on: formData.get('vl_collected_on'), indication: formData.get('vl_indication'), result: formData.get('vl_result') || '', result_date: formData.get('vl_result_date') || null } : null,
         fields,
       });
       await refresh();
@@ -105,6 +106,15 @@ export default function RegisterPatientForm({ onCancel }) {
         <div className="field"><label htmlFor="new-patient-name">Patient name / display label</label><input id="new-patient-name" name="name" maxLength="200" /></div>
       </div>
       {user.edit_any_facility ? <div className="field"><label htmlFor="new-patient-facility">Facility</label><input id="new-patient-facility" name="facility" list="facility-options" required defaultValue={facility && facility !== 'all' ? facility : user.facility} maxLength="200" /><datalist id="facility-options">{facilities.map(f => <option key={f} value={f} />)}</datalist></div> : <p className="tiny muted">Facility is assigned from your account: <b>{user.facility}</b>.</p>}<p className="tiny muted">This registration will appear in the currently selected <b>{source === 'synthetic' ? 'Synthetic' : 'Original'}</b> dataset.</p>
+      <fieldset className="registration-vl"><legend>Viral load sample taken at this visit (optional)</legend>
+        <p className="tiny muted">Record the sample now; add its result on the patient’s Viral load tab when it returns. Leave blank if no sample was taken.</p>
+        <div className="form-grid">
+          <div className="field"><label>Date the sample was taken<input name="vl_collected_on" type="date" max={new Date().toISOString().slice(0, 10)} /></label></div>
+          <div className="field"><label>Indication<select name="vl_indication" defaultValue="Routine">{['6 months after ART initiation', '12 months after ART initiation', 'Routine', 'Repeat (after IAC)', 'Suspected treatment failure', 'ANC / PMTCT', 'Special'].map(i => <option key={i}>{i}</option>)}</select></label></div>
+          <div className="field"><label>Result, if already back<input name="vl_result" maxLength="100" placeholder="leave blank if awaited" /></label></div>
+          <div className="field"><label>Result date<input name="vl_result_date" type="date" max={new Date().toISOString().slice(0, 10)} /></label></div>
+        </div>
+      </fieldset>
       {!columns.length ? <p className="muted">Loading dataset fields…</p> : <>
         <p className="notice info">The form includes the CSV’s demographic, treatment, drug exposure, viral-load history, psychosocial and follow-up fields. Laboratory results and committee decisions are shown as separate locked sections; enter those through the lab and decision workflows.</p>
         {groupOrder.filter(group => grouped[group]?.length || group === 'Viral load history').map(group => <details className="registration-section" key={group} open={['Patient background','Treatment history','Viral load history'].includes(group)}>

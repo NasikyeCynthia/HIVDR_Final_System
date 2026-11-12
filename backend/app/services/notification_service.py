@@ -18,6 +18,8 @@ def notifications(patients, follow_ups=None):
             reasons.append('Missing profile: ' + ', '.join(patient['missing_pre']))
         if patient['status'] in ('Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'):
             reasons.append('Unsuccessful laboratory test: ' + (patient['failure_reason'] or 'reason missing') + ' — request a repeat sample')
+        if patient.get('vl_pending'):
+            reasons.append('Viral load result awaited: record it on the Viral load tab when it returns')
         if patient.get('repeat_requested_at') and patient['status'] == 'Not collected':
             reasons.append('Repeat sample requested by the laboratory (' + (patient.get('repeat_reason') or 'no reason given')
                            + '): bring the patient back for a new sample')

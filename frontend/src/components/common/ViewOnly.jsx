@@ -6,5 +6,5 @@ const WHO = {
   record_follow_up: 'a nurse or counsellor', discuss: 'a clinician',
 };
 export default function ViewOnly({ action, children }) {
-  return <p className="notice info view-only"><b>View only.</b> {children || `This step is recorded by ${WHO[action] || 'another role'} at the patient’s facility.`}</p>;
+  return <p className="notice info view-only"><b>View only.</b> {children || `This step is recorded by ${WHO[action] || 'another role'}.`}</p>;
 }

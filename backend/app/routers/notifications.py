@@ -11,8 +11,8 @@ def list_notifications(user=Depends(current_user)):
         result = notifications(records(con, user), due)
         # Each role sees the work that is theirs.
         mine = {
-            'nurse': ('Missing profile: ', 'Approved decision', '6-monthly', 'High risk', 'Repeat sample requested'),
-            'counsellor': ('Missing profile: ', 'Approved decision', '6-monthly', 'High risk', 'Repeat sample requested'),
+            'nurse': ('Missing profile: ', 'Approved decision', '6-monthly', 'High risk', 'Repeat sample requested', 'Viral load result awaited'),
+            'counsellor': ('Missing profile: ', 'Approved decision', '6-monthly', 'High risk', 'Repeat sample requested', 'Viral load result awaited'),
             'lab': ('Eligible for a DR test', 'Unsuccessful laboratory test', 'DR result overdue'),
             'clinician': ('Usable result awaits clinician review',),
         }.get(user['role'])

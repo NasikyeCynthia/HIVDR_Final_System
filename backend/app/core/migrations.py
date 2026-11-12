@@ -35,6 +35,8 @@ def migrate(con):
     if lab_stages_added:
         backfill_lab_stages(con)
     con.execute('CREATE TABLE IF NOT EXISTS follow_ups(id INTEGER PRIMARY KEY,patient_id INTEGER REFERENCES patients(id),due_date TEXT,assessed_on TEXT,vl_copies REAL,vl_date TEXT,regimen TEXT,care_status TEXT,psychosocial TEXT DEFAULT \'\',clinical_status TEXT DEFAULT \'\',notes TEXT DEFAULT \'\',actor_id INTEGER REFERENCES users(id),created_at TEXT)')
+    con.execute('CREATE TABLE IF NOT EXISTS vl_samples(id INTEGER PRIMARY KEY,patient_id INTEGER REFERENCES patients(id),collected_on TEXT NOT NULL,indication TEXT,status TEXT,result TEXT DEFAULT \'\',result_date TEXT,failure_reason TEXT DEFAULT \'\',history_key TEXT,collected_by INTEGER REFERENCES users(id),resulted_by INTEGER REFERENCES users(id),created_at TEXT,resulted_at TEXT)')
+    con.execute('CREATE INDEX IF NOT EXISTS idx_vl_samples ON vl_samples(patient_id,status)')
     con.execute('CREATE TABLE IF NOT EXISTS lab_attempts(id INTEGER PRIMARY KEY,patient_id INTEGER,actor_id INTEGER,created_at TEXT,snapshot_json TEXT)')
     con.execute('CREATE INDEX IF NOT EXISTS idx_audit_entity_action ON audit(entity,action)')
     con.execute('CREATE TABLE IF NOT EXISTS iac_sessions(id INTEGER PRIMARY KEY,patient_id INTEGER REFERENCES patients(id),session_date TEXT NOT NULL,adherence_pct REAL,method TEXT,barriers TEXT DEFAULT \'\',actor_id INTEGER REFERENCES users(id),created_at TEXT)')

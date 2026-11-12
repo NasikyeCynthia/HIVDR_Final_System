@@ -48,7 +48,7 @@ export default function PatientTable({ patients, tab = 'overview', datasetView =
     const waiting = patient.status === 'Pending' && patient.received_at ? Math.floor((Date.now() - new Date(patient.received_at)) / 86400000) : null;
     const failed = ['Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'].includes(patient.status);
     const mutations = cleanMutations(patient.mutations);
-    const action = patient.eligibility?.status === 'eligible' && !patient.referred_at ? ['risk', 'Request DR test →'] : patient.status === 'Not collected' ? ['laboratory', 'Record sample →'] : failed ? ['laboratory', 'Request repeat →'] : ['laboratory', patient.status === 'Pending' ? 'Update →' : 'View →'];
+    const action = patient.vl_pending > 0 ? ['viral-load', 'Record VL result →'] : patient.eligibility?.status === 'eligible' && !patient.referred_at ? ['risk', 'Request DR test →'] : patient.status === 'Not collected' ? ['laboratory', 'Record sample →'] : failed ? ['laboratory', 'Request repeat →'] : ['laboratory', patient.status === 'Pending' ? 'Update →' : 'View →'];
     return <tr key={patient.id}>
       {id(patient)}
       <td>{patient.sample_type || '—'}{patient.sample_type === 'DBS' && <div className="tiny muted">{patient.dbs_reason || 'Reason not recorded'}</div>}</td>

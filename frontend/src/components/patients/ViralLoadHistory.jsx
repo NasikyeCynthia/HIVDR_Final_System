@@ -3,6 +3,7 @@ import { operationsService } from '../../services/operationsService.js';
 import usePatientAction from '../../hooks/usePatientAction.js';
 import Card from '../common/Card.jsx';
 import Feedback from '../common/Feedback.jsx';
+import ViralLoadSamples from './ViralLoadSamples.jsx';
 
 function numberedTests(record) {
   const numbers = new Set();
@@ -22,7 +23,7 @@ function numberedTests(record) {
   }));
 }
 
-export default function ViralLoadHistory({ patient, record = {}, onSaved }) {
+export default function ViralLoadHistory({ patient, record = {}, samples = [], indications = [], onSaved }) {
   const { user } = useAuth();
   const action = usePatientAction(onSaved);
   const tests = numberedTests(record);
@@ -45,16 +46,17 @@ export default function ViralLoadHistory({ patient, record = {}, onSaved }) {
   ].filter(([, value, date]) => String(value || '').trim() || String(date || '').trim());
 
   return <>
+    <ViralLoadSamples patient={patient} samples={samples} indications={indications} onSaved={onSaved} />
     <Card title="Viral load history" subtitle="Numbered tests can continue beyond the 10 prior-test columns in the original CSV.">
-      <div className="detail-list"><div><label>VL leading to drug-resistance testing</label>{record['VL Leading to DR'] || patient.viral_load || 'Not recorded'}</div><div><label>Test date</label>{record['VL Test Date'] || 'Not recorded'}</div></div>
+      <div className="detail-list"><div><label>{record['VL Leading to DR'] ? 'VL leading to drug-resistance testing' : 'Latest viral load'}</label>{record['VL Leading to DR'] || patient.viral_load || 'Not recorded'}</div><div><label>Test date</label>{record['VL Test Date'] || 'Not recorded'}</div></div>
       <h3>Viral load tests</h3>
       {tests.length ? <div className="table-wrap"><table><thead><tr><th>Test</th><th>Result</th><th>Date</th></tr></thead><tbody>{tests.map(test => <tr key={test.number}><td>Test {test.number}</td><td>{test.result || 'Not recorded'}</td><td>{test.date || 'Not recorded'}</td></tr>)}</tbody></table></div> : <p className="muted">No additional prior viral load tests are recorded.</p>}
       {followUps.length > 0 && <><h3>Post-decision follow-up</h3><div className="table-wrap"><table><thead><tr><th>Follow-up</th><th>Viral load</th><th>Date</th></tr></thead><tbody>{followUps.map(([label, value, date]) => <tr key={label}><td>{label}</td><td>{value || 'Not recorded'}</td><td>{date || 'Not recorded'}</td></tr>)}</tbody></table></div></>}
       <p className="tiny muted">All dated results here are used, in date order, by the eligibility rules and the risk score. Non-suppressed means 1,000 copies/mL or more (WHO).</p>
     </Card>
-    {canEdit ? <Card title={`Add viral load test ${nextNumber}`}>
+    {canEdit ? <Card title={`Add a past result (test ${nextNumber})`} subtitle="For results from before this system, e.g. copied from the patient file">
       <Feedback error={action.error} success={action.success}/>
       <form onSubmit={addTest}><div className="form-grid"><div className="field"><label htmlFor="new-vl-result">Test result</label><input id="new-vl-result" name="result" required maxLength="100" placeholder="e.g. 250, &lt;20, or undetectable" /></div><div className="field"><label htmlFor="new-vl-date">Test date</label><input id="new-vl-date" name="test_date" type="date" /></div></div><div className="form-actions"><button className="btn" disabled={action.busy}>{action.busy ? 'Saving…' : `Add test ${nextNumber}`}</button></div></form>
-    </Card> : <p className="notice info">Adding viral load history requires a nurse or counsellor account assigned to this facility.</p>}
+    </Card> : null}
   </>;
 }

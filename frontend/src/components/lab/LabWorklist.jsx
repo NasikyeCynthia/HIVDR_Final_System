@@ -4,6 +4,7 @@ import PatientList from '../patients/PatientList.jsx';
 // The laboratory's own work, not every patient record. A patient appears once there is laboratory work:
 // eligible for a DR test, requested, sampled, being tested, resulted, or needing a repeat sample.
 const SEGMENTS = [
+  ['vl', 'Viral load results awaited', p => p.vl_pending > 0],
   ['request', 'To request', p => p.eligibility?.status === 'eligible' && !p.referred_at && p.status === 'Not collected'],
   ['collect', 'To collect', p => p.status === 'Not collected' && (p.referred_at || p.repeat_requested_at)],
   ['process', 'In process', p => p.status === 'Pending'],
