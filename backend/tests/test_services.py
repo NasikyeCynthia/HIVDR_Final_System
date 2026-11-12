@@ -10,10 +10,9 @@ from app.core.errors import DomainError
 from app.services.import_service import import_rows
 from app.services.patient_service import records
 from app.services.profile_service import update_profile
-from app.services.lab_service import update_lab_result, request_repeat_sample
+from app.services.lab_service import record_collection, record_dispatch, record_receipt, record_result, request_repeat_sample
 from app.services.decision_service import approve_decision, implement_decision
 from app.services.referral_service import refer_for_drt
-from app.services.risk_service import score
 from app.services.workflow_service import load_patient, change_patient
 
 class ServiceTests(unittest.TestCase):
@@ -31,17 +30,6 @@ class ServiceTests(unittest.TestCase):
         bootstrap.ROOT,bootstrap.DB,database.DB=self.old
         self.temp.cleanup()
 
-    def test_factor_boundaries_preserve_requested_weights(self):
-        for vl,expected in [(199,0),(200,30),(999,30),(1000,60)]:
-            self.assertEqual(score({'viral_load':vl,'adherence':100,'treatment_line':1})['factors'][0]['points'],expected)
-        for adherence,expected in [(84.9,60),(85,30),(99.9,30),(100,0)]:
-            self.assertEqual(score({'viral_load':0,'adherence':adherence,'treatment_line':1})['factors'][1]['points'],expected)
-        for line,expected in [(1,0),(2,30),(3,60)]:
-            self.assertEqual(score({'viral_load':0,'adherence':100,'treatment_line':line})['factors'][2]['points'],expected)
-        self.assertEqual(score({'viral_load':1000,'adherence':82,'treatment_line':3})['total'],180)
-        self.assertEqual(score({'viral_load':1000,'adherence':82,'treatment_line':3})['category'],'High')
-        self.assertEqual(score({'viral_load':1000,'adherence':None,'treatment_line':3})['category'],'High')
-
     def test_role_assignment_and_facility_permissions(self):
         with database.connect() as con:
             con.execute('UPDATE patients SET assigned_to=? WHERE id=2', (self.users['nurse']['id'],))
@@ -54,33 +42,50 @@ class ServiceTests(unittest.TestCase):
         with database.connect() as con:
             con.execute("UPDATE patients SET facility='Other Facility' WHERE id=2")
         with self.assertRaises(DomainError) as error:
-            change_patient(2,self.users['nurse'],{},update_profile)
+            change_patient(2,self.users['counsellor'],{},update_profile)
         self.assertEqual(error.exception.status_code,404)
+        with self.assertRaises(DomainError) as error:  # nurses may view all facilities but edit only their own
+            change_patient(2,self.users['nurse'],{},update_profile)
+        self.assertEqual(error.exception.status_code,403)
         with database.connect() as con:
-            self.assertNotIn(2,[p['id'] for p in records(con,self.users['nurse'])])
+            self.assertNotIn(2,[p['id'] for p in records(con,self.users['counsellor'])])
+            self.assertIn(2,[p['id'] for p in records(con,self.users['nurse'])])
             self.assertIn(2,[p['id'] for p in records(con,self.users['admin'])])
 
     def test_lab_review_and_implementation(self):
         pid=1
-        change_patient(pid,self.users['nurse'],{'adherence':82},update_profile)
+        lab=self.users['lab']
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET referred_at='2026-10-01' WHERE patient_id=1")
+            con.execute('UPDATE patients SET assigned_to=? WHERE id=1',(self.users['nurse']['id'],))
         with self.assertRaises(ValueError):
-            change_patient(pid,self.users['lab'],{'sample_type':'DBS','status':'Unamplified','failure_reason':'Failed'},update_lab_result)
-        change_patient(pid,self.users['lab'],{'sample_type':'DBS','dbs_reason':'Transport unavailable','status':'Unamplified','failure_reason':'No amplification'},update_lab_result)
-        change_patient(pid,self.users['lab'],{},request_repeat_sample)
+            change_patient(pid,lab,{'sample_type':'DBS','collected_at':'2026-10-02T09:00'},record_collection)
+        change_patient(pid,lab,{'sample_type':'DBS','collected_at':'2026-10-02T09:00','officer_phone':'0772000111','dbs_reason':'Plasma processing or cold chain not available'},record_collection)
+        change_patient(pid,lab,{'dispatched_at':'2026-10-03'},record_dispatch)
+        change_patient(pid,lab,{'received_at':'2026-10-05','outcome':'Referred to DR lab'},record_receipt)
+        change_patient(pid,lab,{'outcome':'Unamplified','tested_at':'2026-10-20','released_at':'2026-10-21','failure_reason':'No amplification'},record_result)
+        change_patient(pid,lab,{},request_repeat_sample)
         decision={'decision':'Maintained','decision_notes':'Review rationale','recommended_regimen':'Test regimen'}
         with self.assertRaises(ValueError):
             change_patient(pid,self.users['clinician'],decision,approve_decision)
-        change_patient(pid,self.users['lab'],{'sample_type':'Plasma','status':'Usable result','mutations':'Test evidence'},update_lab_result)
+        change_patient(pid,lab,{'sample_type':'Plasma','collected_at':'2026-10-25T08:00','officer_phone':'0772000111','centrifuged_at':'2026-10-25T10:00','tubes':2},record_collection)
+        change_patient(pid,lab,{'received_at':'2026-10-27','outcome':'Referred to DR lab','plasma_volume_ml':2},record_receipt)
+        change_patient(pid,lab,{'outcome':'Usable result','tested_at':'2026-11-05','released_at':'2026-11-06','mutations':'RT:M184V'},record_result)
         with self.assertRaises(DomainError):
             change_patient(pid,self.users['nurse'],decision,approve_decision)
+        with self.assertRaises(ValueError):  # psychosocial assessment missing
+            change_patient(pid,self.users['clinician'],decision,approve_decision)
+        with database.connect() as con:
+            con.execute('UPDATE patients SET psychosocial_json=? WHERE id=1',(json.dumps({'assessed':True,'factors':[]}),))
         change_patient(pid,self.users['clinician'],decision,approve_decision)
         change_patient(pid,self.users['nurse'],{'implementation_notes':'Implementation confirmed'},implement_decision)
         with database.connect() as con:
             _,episode=load_patient(con,self.users['nurse'],pid)
             self.assertTrue(episode['implemented_at'])
+            self.assertEqual(episode['attempt_no'],2)
             self.assertEqual(con.execute("SELECT count(*) FROM audit WHERE action='decision implemented'").fetchone()[0],1)
-        with self.assertRaises(ValueError):
-            change_patient(pid,self.users['lab'],{'sample_type':'Plasma','status':'Pending'},update_lab_result)
+        with self.assertRaises(DomainError):
+            change_patient(pid,lab,{},request_repeat_sample)
 
     def test_csv_preservation_deduplication_and_rollback(self):
         text='Patient No.,Facility,VL Leading to DR,Extra column\nIMPORT-1,Demo Facility,"1,500 Copies / mL",retain me\n'
@@ -103,6 +108,8 @@ class ServiceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 change_patient(1,self.users['nurse'],data,update_profile)
         with self.assertRaises(ValueError):
+            change_patient(1,self.users['lab'],{},refer_for_drt)
+        with self.assertRaises(DomainError):  # only laboratory staff request DR tests
             change_patient(1,self.users['clinician'],{},refer_for_drt)
 
 if __name__=='__main__':

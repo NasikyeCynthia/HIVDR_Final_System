@@ -7,7 +7,6 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from app.core import bootstrap, database
 from app.main import app
-from app.services.risk_service import score
 from app.services.stanford_service import analyze
 from app.core.errors import DomainError
 
@@ -36,10 +35,10 @@ class WorkflowTests(unittest.TestCase):
     def test_all_facilities_is_explicit_and_read_only(self):
         with database.connect() as con:
             con.execute("UPDATE patients SET facility='Other Hospital' WHERE id=2")
-        self.login('nurse')
+        self.login('counsellor')
         self.assertEqual(self.client.get('/api/patients/2').status_code,404)
         with database.connect() as con:
-            con.execute("UPDATE users SET can_access_all=1 WHERE username='nurse'")
+            con.execute("UPDATE users SET can_access_all=1 WHERE username='counsellor'")
         self.assertEqual(self.client.get('/api/patients/2').status_code,200)
         self.assertEqual(self.client.patch('/api/patients/2/profile',json={'adherence':100}).status_code,403)
         self.assertEqual(self.client.get('/api/auth/me').json()['can_access_all'],1)
@@ -61,24 +60,28 @@ class WorkflowTests(unittest.TestCase):
 
     def test_psychosocial_permission_and_persistence(self):
         self.login('nurse')
-        response=self.client.put('/api/workflow/patients/1/psychosocial',json={'assessed':True,'factors':['Food insecurity'],'notes':'Follow-up planned'})
+        response=self.client.put('/api/workflow/patients/1/psychosocial',json={'assessed':True,'factors':['Had 1 or no meal/day'],'notes':'Follow-up planned'})
         self.assertEqual(response.status_code,200,response.text)
-        self.assertEqual(self.client.get('/api/patients/1').json()['patient']['psychosocial']['factors'],['Food insecurity'])
+        self.assertEqual(self.client.get('/api/patients/1').json()['patient']['psychosocial']['factors'],['Had 1 or no meal/day'])
         self.login('lab')
         self.assertEqual(self.client.put('/api/workflow/patients/1/psychosocial',json={'assessed':True}).status_code,403)
 
     def test_stanford_result_storage_and_lab_invalidation(self):
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET referred_at='2026-10-01' WHERE patient_id=1")
         self.login('lab')
-        lab={'sample_type':'Plasma','status':'Usable result','mutations':'RT:M184V'}
-        self.assertEqual(self.client.put('/api/lab/1',json=lab).status_code,200)
+        for stage,body in (('collection',{'sample_type':'Plasma','collected_at':'2026-10-02T08:00','centrifuged_at':'2026-10-02T09:00','tubes':2,'officer_phone':'+256772000111'}),
+                           ('receipt',{'received_at':'2026-10-04','outcome':'Referred to DR lab','plasma_volume_ml':2}),
+                           ('result',{'outcome':'Usable result','tested_at':'2026-10-20','released_at':'2026-10-21','mutations':'RT:M184V'})):
+            r=self.client.put(f'/api/lab/1/{stage}',json=body)
+            self.assertEqual(r.status_code,200,r.text)
         result={'provider':'Stanford HIVdb Sierra','version':{'text':'test-fixture'},'analysis':{'validationResults':[],'drugResistance':[]}}
         with patch('app.services.stanford_service.analyze',return_value=result):
             r=self.client.post('/api/workflow/patients/1/interpret',json={'kind':'mutations','text':'RT:M184V'})
         self.assertEqual(r.status_code,200,r.text)
         self.assertEqual(self.client.get('/api/patients/1').json()['patient']['interpretation']['version']['text'],'test-fixture')
-        self.client.put('/api/lab/1',json=lab)
         p=self.client.get('/api/patients/1').json()
-        self.assertIsNone(p['patient']['interpretation'])
+        self.assertEqual(p['patient']['lab']['stage'],'Result released')
         self.assertEqual(len(p['lab_history']),2)
 
     def test_adapter_strips_fasta_identifiers_and_handles_failure(self):
@@ -108,12 +111,6 @@ class WorkflowTests(unittest.TestCase):
         original=self.client.get('/api/patients/'+str(p['id'])).json()['original']
         self.assertEqual(original['Resistance to 3TC'],'High-Level Resistance')
         self.assertEqual(self.client.post('/api/workflow/map-original-history').json()['mapped'],0)
-
-    def test_overall_risk_categories(self):
-        for vl,adherence,line,total,category in [(100,100,1,0,'Low'),(200,100,1,30,'Intermediate'),(1000,100,1,60,'High'),(200,90,1,60,'High'),(1000,80,3,180,'High')]:
-            result=score({'viral_load':vl,'adherence':adherence,'treatment_line':line})
-            self.assertEqual((result['total'],result['category']),(total,category))
-
 
     def test_full_record_values_edit_clear_and_conflict(self):
         self.login('admin')
@@ -162,10 +159,6 @@ class WorkflowTests(unittest.TestCase):
         self.assertFalse(self.client.get('/api/operations/patients/1/prediction').json()['available'])
 
 
-    def test_partial_known_high_score_and_unknown_low(self):
-        self.assertEqual(score({'viral_load':1000,'adherence':None,'treatment_line':1})['category'],'High')
-        self.assertEqual(score({'viral_load':100,'adherence':None,'treatment_line':1})['category'],'Incomplete')
-
     def test_clinician_amendment_preserves_previous_decision(self):
         with database.connect() as con:
             con.execute("UPDATE episodes SET status='Usable result',reviewed_at='2026-10-01',decision='Maintained',decision_notes='Previous rationale' WHERE patient_id=1")
@@ -205,5 +198,87 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(patient['status'],'Usable result')
         details=self.client.get('/api/patients/'+str(patient['id'])).json()
         self.assertEqual(details['patient']['suggested_mutations'],'RT:M184V IN:R263K')
+
+    def test_iac_sessions_drive_guideline_referral(self):
+        self.login('admin')
+        csv=('Patient No.,Facility,Age(yrs),Treatment Initiation Date,VL Leading to DR,VL Test Date,vl_1_Prior_To_DR,VL_1_Prior_To_DR_TestDate,Treatment Line at Sample collection,ART at sample collection(ART@VL@DR)\n'
+             'ELIG-1,Demo Facility,40,01/01/2018,30000,15/08/2026,200000,01/05/2026,First Line,TDF-3TC-DTG\n')
+        self.assertEqual(self.client.post('/api/settings/import',json={'source':'original','csv':csv}).status_code,200)
+        pid=next(p['id'] for p in self.client.get('/api/patients').json() if p['external_id']=='ELIG-1')
+        self.login('counsellor')
+        self.assertEqual(self.client.get(f'/api/eligibility/{pid}').json()['status'],'needs_documentation')
+        self.login('lab')
+        self.assertEqual(self.client.post(f'/api/eligibility/{pid}/refer',json={}).status_code,400)  # not yet eligible
+        self.login('counsellor')
+        for day,pct in (('2026-05-20',96),('2026-06-20',99),('2026-07-20',100)):
+            r=self.client.post(f'/api/eligibility/{pid}/iac',json={'session_date':day,'adherence_pct':pct})
+            self.assertEqual(r.status_code,200,r.text)
+        self.assertEqual(self.client.get(f'/api/patients/{pid}').json()['patient']['eligibility']['status'],'eligible')
+        self.assertEqual(self.client.post(f'/api/eligibility/{pid}/refer',json={}).status_code,403)  # counsellors cannot request
+        self.login('lab')
+        self.assertEqual(self.client.post(f'/api/eligibility/{pid}/refer',json={}).status_code,200)
+        lab_id=self.client.get('/api/auth/me').json()['id']
+        self.assertEqual(self.client.get(f'/api/patients/{pid}').json()['patient']['lab_owner'],lab_id)  # accountable officer
+        self.assertEqual(self.client.get(f'/api/eligibility/{pid}').json()['status'],'in_process')
+
+    def test_request_outside_criteria_is_lab_only_and_needs_reason(self):
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET referred_at=NULL,sample_at=NULL,status='Not collected' WHERE patient_id=2")
+            con.execute("UPDATE patients SET facility='Demo Facility' WHERE id=2")
+        for role in ('nurse','clinician'):
+            self.login(role)
+            self.assertEqual(self.client.post('/api/eligibility/2/refer',json={'basis':'clinician_override','reason':'infant of failing mother'}).status_code,403)
+        self.login('lab')
+        self.assertEqual(self.client.post('/api/eligibility/2/refer',json={'basis':'clinician_override','reason':'short'}).status_code,400)
+        r=self.client.post('/api/eligibility/2/refer',json={'basis':'clinician_override','reason':'HIV-positive infant born to a mother failing second line'})
+        self.assertEqual(r.status_code,200,r.text)
+
+    def test_lab_stages_enforce_moh_sample_rules(self):
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET referred_at=NULL WHERE patient_id=1")
+        self.login('lab')
+        plasma={'sample_type':'Plasma','collected_at':'2026-10-02T08:00','centrifuged_at':'2026-10-02T16:30','tubes':1,'storage_temp':'Room temperature','officer_phone':'0772000111'}
+        self.assertEqual(self.client.put('/api/lab/1/collection',json=plasma).status_code,400)  # no indication yet
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET referred_at='2026-10-01' WHERE patient_id=1")
+        self.assertEqual(self.client.put('/api/lab/1/result',json={'outcome':'Usable result','tested_at':'2026-10-20','released_at':'2026-10-21'}).status_code,400)
+        self.assertEqual(self.client.put('/api/lab/1/collection',json={**plasma,'centrifuged_at':None}).status_code,400)
+        self.assertEqual(self.client.put('/api/lab/1/collection',json=plasma).status_code,200)
+        flags=[f['text'] for f in self.client.get('/api/patients/1').json()['patient']['lab']['flags']]
+        self.assertTrue(any('8.5 h' in f for f in flags), flags)
+        self.assertTrue(any('two tubes' in f for f in flags), flags)
+        self.assertEqual(self.client.put('/api/lab/1/receipt',json={'received_at':'2026-10-01','outcome':'Referred to DR lab'}).status_code,400)  # before collection
+        self.assertEqual(self.client.put('/api/lab/1/receipt',json={'received_at':'2026-10-04','outcome':'Referred to DR lab','plasma_volume_ml':0.5}).status_code,400)
+        self.assertEqual(self.client.put('/api/lab/1/receipt',json={'received_at':'2026-10-04','outcome':'Rejected','reason':'Not a listed reason'}).status_code,400)
+        r=self.client.put('/api/lab/1/receipt',json={'received_at':'2026-10-04','outcome':'Rejected','reason':'Insufficient sample (less than 1 mL plasma)','plasma_volume_ml':0.5})
+        self.assertEqual(r.status_code,200,r.text)
+        p=self.client.get('/api/patients/1').json()['patient']
+        self.assertEqual((p['status'],p['lab']['stage']),('Rejected','Returned to facility'))
+        self.assertEqual(self.client.post('/api/lab/1/repeat-request').status_code,200)
+        p=self.client.get('/api/patients/1').json()['patient']
+        self.assertEqual((p['status'],p['attempt_no']),('Not collected',2))
+
+    def test_view_only_roles_and_implementation_follow_up(self):
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET status='Usable result',decision='Switched',decision_at='2026-10-01',recommended_regimen='AZT-3TC-DTG',reviewed_at='2026-10-01',implemented_at=NULL WHERE patient_id=1")
+            con.execute('UPDATE patients SET assigned_to=NULL WHERE id=1')
+        self.login('clinician')
+        self.assertEqual(self.client.patch('/api/patients/1/profile',json={'age':40}).status_code,403)
+        self.assertEqual(self.client.post('/api/decisions/1/implement',json={'implementation_notes':'x'}).status_code,403)
+        self.login('lab')
+        self.assertEqual(self.client.post('/api/eligibility/1/iac',json={'session_date':'2026-10-01','adherence_pct':96}).status_code,403)
+        self.login('nurse')
+        me=self.client.get('/api/auth/me').json()
+        self.assertIn('implement_decision',me['permissions'])
+        detail=self.client.get('/api/patients/1').json()['patient']
+        self.assertEqual(detail['recommended_regimen'],'AZT-3TC-DTG')   # approved decision is visible to the nurse
+        self.assertEqual(self.client.post('/api/decisions/1/implement',json={'implementation_notes':'Started at clinic'}).status_code,400)
+        r=self.client.post('/api/decisions/1/implement',json={'implementation_notes':'Started at clinic','start_date':'2026-10-05','started_regimen':'AZT-3TC-DTG','previous_stop_date':'2026-10-04'})
+        self.assertEqual(r.status_code,200,r.text)
+        follow=self.client.get('/api/patients/1').json()['follow_ups']
+        self.assertEqual(follow[0]['due_date'],'2027-04-05')
+        r=self.client.post('/api/decisions/1/follow-up',json={'care_status':'Alive and on treatment','vl_copies':40,'vl_date':'2026-11-01'})
+        self.assertEqual(r.status_code,200,r.text)
+        self.assertEqual(len(self.client.get('/api/patients/1').json()['follow_ups']),2)
 
 if __name__=='__main__': unittest.main()

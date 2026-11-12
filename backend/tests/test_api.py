@@ -54,7 +54,7 @@ class ApiTests(unittest.TestCase):
         for route in ['/api/risk/rules', '/api/integrations/status', '/api/settings/users', '/api/notifications', '/api/health']:
             self.assertEqual(self.client.get(route).status_code, 200, route)
         paths = self.client.get('/openapi.json').json()['paths']
-        self.assertIn('/api/lab/{patient_id}', paths)
+        self.assertIn('/api/lab/{patient_id}/result', paths)
         self.assertIn('/api/decisions/{patient_id}/approve', paths)
 
     def test_foreign_origin_rejected(self):
