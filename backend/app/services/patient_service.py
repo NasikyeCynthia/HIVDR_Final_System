@@ -18,7 +18,8 @@ def records(con, user, include_archived=False, summary=False):
     rows=[decorate(dict(r)) for r in con.execute(sql,args).fetchall() if include_archived or not dict(r).get('archived_at')]
     if summary:
         omit={'psychosocial','interpretation','approval_blockers','decision_notes','recommended_regimen','implementation_notes',
-              'centrifuged_at','tubes','whole_blood_ml','storage_temp','workflow_collection','plasma_volume_ml','cphl_reason','dr_referred_at','attempt_no','tested_at','dispatched_at','referral_basis','dbs_reason'}
+              'centrifuged_at','tubes','whole_blood_ml','storage_temp','workflow_collection','plasma_volume_ml','cphl_reason','dr_referred_at','attempt_no','tested_at','dispatched_at','referral_basis','dbs_reason',
+              'eligibility_status','risk_category','risk_flagged'}
         for row in rows:
             for key in omit:row.pop(key,None)
             row['eligibility']={'status':row['eligibility']['status']}

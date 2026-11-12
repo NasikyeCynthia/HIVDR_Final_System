@@ -1,7 +1,7 @@
 import AccountabilitySummary from '../components/dashboard/AccountabilitySummary.jsx';
 import RiskChart from '../components/dashboard/RiskChart.jsx';
 import EligibilityChart from '../components/dashboard/EligibilityChart.jsx';
-import HivdrCascade from '../components/dashboard/HivdrCascade.jsx';
+
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
@@ -53,8 +53,8 @@ export default function DashboardPage() {
     </div>
     <div className="grid-two"><ProcessCascade patients={patients} /><ClinicalCascade patients={patients} /></div>
     <div className="grid-half"><DecisionChart patients={patients} /><RiskChart patients={patients} /></div>
-    <div className="grid-half"><EligibilityChart patients={patients} /><HivdrCascade patients={patients} /></div>
-    <div className="section-gap"><ProfileCompleteness patients={patients} /></div>
+    <div className="grid-half"><EligibilityChart patients={patients} /><ProfileCompleteness patients={patients} /></div>
+
     <div className="grid-half"><LaboratoryOverview patients={patients} /><Card title="Needs attention" subtitle="Operational follow-through">
       <Link className="clinical-row" to="/patients?filter=failed"><span>Unsuccessful tests</span><span /><b>{patients.filter(p => ['Unamplified', 'Sequencing failed'].includes(p.status)).length}</b></Link>
       <Link className="clinical-row" to="/patients?filter=awaiting-implementation"><span>Decision not implemented</span><span /><b>{patients.filter(p => p.decision && !p.implemented_at).length}</b></Link>

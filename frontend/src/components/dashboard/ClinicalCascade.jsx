@@ -1,11 +1,19 @@
 import { Link } from 'react-router-dom';
 import Card from '../common/Card.jsx';
-export default function ClinicalCascade({patients}) {
- const total=patients.length;
- const rows=[
-  ['Pending',patients.filter(p=>p.discussion_status==='Pending').length,'discussion-pending','#d8a510'],
-  ['Done',patients.filter(p=>p.discussion_status==='Done').length,'discussion-done','#27845d'],
-  ['Blank',patients.filter(p=>!p.discussion_status).length,'discussion-blank','#8b9aa2'],
- ];
- return <Card title="Discussion status" subtitle="From the dataset’s decision category: pending, completed, or blank"><div className="cascade">{rows.map(([label,count,filter,color])=><Link key={label} className="bar-col" to={`/patients?filter=${filter}`} aria-label={`${label}: ${count} patients`}><span className="bar-value">{count}</span><span className="bar-percent">{total?Math.round(count/total*100):0}%</span><span className="bar" style={{height:`${Math.max(1,total?count/total*155:1)}px`,background:color}}/></Link>)}</div><div className="bar-labels">{rows.map(([label])=><span key={label}>{label}</span>)}</div><p className="tiny muted">Pending uses “Pending Discussion”; Done means a committee decision is recorded. Blank means no discussion category is recorded. Select a bar to see patient IDs and names.</p><Link className="text-link" to="/patients?filter=awaiting-implementation">{patients.filter(p=>p.decision&&!p.implemented_at).length} decisions await implementation →</Link></Card>;
+// Committee decisions and their implementation (follows the process cascade).
+export default function ClinicalCascade({ patients }) {
+  const decided = patients.filter(p => p.decision);
+  const n = decided.length;
+  const rows = [
+    ['Maintained', decided.filter(p => p.decision === 'Maintained').length, 'Maintained', '#27845d'],
+    ['Switched', decided.filter(p => p.decision === 'Switched').length, 'Switched', '#c34351'],
+    ['Substituted', decided.filter(p => p.decision === 'Substituted').length, 'Substituted', '#d8a510'],
+    ['Implemented', decided.filter(p => p.implemented_at).length, 'implemented', '#4361a6'],
+  ];
+  return <Card title="Clinical cascade" subtitle={`${n.toLocaleString()} committee decisions`}>
+    <div className="cascade">{rows.map(([label, count, filter, color]) => <Link key={label} className="bar-col" to={`/patients?filter=${filter}`} aria-label={`${label}: ${count} patients`}><span className="bar-value">{count}</span><span className="bar-percent">{n ? Math.round(count / n * 100) : 0}%</span><span className="bar" style={{ height: `${Math.max(1, n ? count / n * 155 : 1)}px`, background: color }} /></Link>)}</div>
+    <div className="bar-labels">{rows.map(([label]) => <span key={label}>{label}</span>)}</div>
+    <p className="tiny muted">Percentages are of all committee decisions. Implemented = the nurse/counsellor has recorded that the decision was carried out.</p>
+    <Link className="text-link" to="/patients?filter=awaiting-implementation">{decided.filter(p => !p.implemented_at).length} decisions await implementation →</Link>
+  </Card>;
 }

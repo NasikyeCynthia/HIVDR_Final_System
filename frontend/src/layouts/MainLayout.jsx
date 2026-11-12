@@ -35,6 +35,7 @@ export default function MainLayout() {
           Viewing access does not grant permission to edit or approve at other facilities.
         </p>}
         {error && <p role="alert" className="notice error">{error}</p>}
+        {loading && <p role="status" className="notice info"><b>Loading patient records…</b> With the full dataset this can take up to a minute; the counts below fill in when it finishes.</p>}
         <Outlet />
       </div>
     </main>

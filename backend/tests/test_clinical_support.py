@@ -16,31 +16,24 @@ def patient(**kw):
     return p, raw
 
 class RiskScore(unittest.TestCase):
-    def test_points_and_bands(self):
-        p, raw = patient()
-        result = score(p, raw, [], assess(p, raw, today=date(2026, 11, 1)))
-        named = {f['name']: f['points'] for f in result['factors']}
-        self.assertEqual(named['On ART 5 years or more'], 1)
-        self.assertEqual(named['Less than 1-log drop after IAC'], 1)  # 20,000 → 8,000 is 0.4 log
-        self.assertEqual((result['total'], result['category']), (2, 'Low'))
+    """The project's original points algorithm (prototype 2.1)."""
+    def test_viral_load_1000_alone_is_high(self):
+        r = score({'viral_load': 1500, 'adherence': None, 'treatment_line': None})
+        self.assertEqual((r['known_total'], r['category'], r['flagged']), (60, 'High', True))
 
-    def test_second_line_child_is_high_and_flagged(self):
-        p, raw = patient(**{'Age(yrs)': '8', 'Treatment Line at Sample collection': 'Second Line', 'ART at sample collection(ART@VL@DR)': 'ABC-3TC-LPV/r'})
-        p['treatment_line'] = 2
-        result = score(p, raw, [], assess(p, raw, today=date(2026, 11, 1)))
-        self.assertEqual(result['category'], 'High')
-        self.assertTrue(result['flagged'])
-        self.assertIn('DR test', result['reason'])
+    def test_bands_when_complete(self):
+        self.assertEqual(score({'viral_load': 40, 'adherence': 100, 'treatment_line': 1})['category'], 'Low')
+        self.assertEqual(score({'viral_load': 400, 'adherence': 100, 'treatment_line': 1})['category'], 'Intermediate')
+        self.assertEqual(score({'viral_load': 400, 'adherence': 90, 'treatment_line': 1})['total'], 60)
 
-    def test_good_adherence_with_persistent_viraemia_adds_guideline_points(self):
-        p, raw = patient()
-        sessions = [{'session_date': f'2026-0{m}-10', 'adherence_pct': 98} for m in (5, 6, 7)]
-        result = score(p, raw, sessions, assess(p, raw, sessions=sessions, today=date(2026, 11, 1)))
-        self.assertEqual(result['clinical_points'], 3)  # +2 persistent despite good IAC, +1 <1-log drop
+    def test_incomplete_below_60(self):
+        r = score({'viral_load': 400, 'adherence': None, 'treatment_line': 1})
+        self.assertEqual(r['category'], 'Incomplete')
+        self.assertIn('Adherence (%)', r['missing_inputs'])
 
-    def test_suppressed_patient_is_not_scored(self):
-        p, raw = patient(**{'VL Leading to DR': '<20'})
-        self.assertEqual(score(p, raw, [], {})['category'], 'Not applicable')
+    def test_reason_includes_eligibility(self):
+        r = score({'viral_load': 5000, 'adherence': 96, 'treatment_line': 2}, eligibility={'label': 'Not yet eligible', 'next_step': 'Start IAC.'})
+        self.assertIn('DR test: Not yet eligible', r['reason'])
 
 class Suggestion(unittest.TestCase):
     def rec(self, regimen, **levels):

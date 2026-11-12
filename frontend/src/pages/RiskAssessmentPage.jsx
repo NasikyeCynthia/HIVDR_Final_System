@@ -14,17 +14,14 @@ export default function RiskAssessmentPage() {
     <PageHeader title="Risk assessment" description={`${flagged} patient(s) flagged at high risk of drug resistance · ${due} eligible for a DR test and not yet requested.`} />
     <div className="grid-half"><RiskChart patients={patients} /><EligibilityChart patients={patients} /></div>
     <div className="grid-half">
-      <Card title="Risk points score" subtitle="Who is most likely to have resistance — used to prioritise">
-        <table className="rule-table"><thead><tr><th>Factor</th><th>Points</th></tr></thead><tbody>
-          <tr><td>Second- or third-line regimen</td><td>3</td></tr><tr><td>NNRTI-based regimen (EFV/NVP)</td><td>3</td></tr>
-          <tr><td>Child under 10 years</td><td>3</td></tr><tr><td>Adolescent 10–19 years</td><td>1</td></tr>
-          <tr><td>On ART 5 years or more</td><td>1</td></tr><tr><td>Three or more consecutive VL ≥1000</td><td>1</td></tr>
-          <tr><td>Previously exposed to both AZT and ABC</td><td>1</td></tr>
-          <tr><td>Still ≥1000 after 3 good IAC sessions (guideline)</td><td>2</td></tr><tr><td>Less than 1-log drop after IAC (guideline)</td><td>1</td></tr>
-          <tr><td>Poor adherence on an NNRTI regimen (guideline)</td><td>1</td></tr>
+      <Card title="Risk points score" subtitle="Original project algorithm (prototype 2.1)">
+        <table className="rule-table"><thead><tr><th>Input</th><th>Points</th></tr></thead><tbody>
+          <tr><td>Viral load ≥1000 copies/mL</td><td>60</td></tr><tr><td>Viral load 200–999</td><td>30</td></tr>
+          <tr><td>Adherence below 85%</td><td>60</td></tr><tr><td>Adherence 85–99%</td><td>30</td></tr>
+          <tr><td>Third-line regimen</td><td>60</td></tr><tr><td>Second-line regimen</td><td>30</td></tr>
         </tbody></table>
-        <p>Only patients with VL ≥1000 copies/mL are scored. Low 0–2 (≈41% had resistance) · Moderate 3–4 (≈67%) · High 5+ (≈78%, flagged)</p>
-        <p className="tiny muted">Weights come from 9,934 CPHL records with full resistance results and agree with published African cohorts. AUROC 0.71 on held-out facilities, close to the machine-learning model below (0.72).</p>
+        <p>Low 0 · Intermediate 30–59 · High 60–180 (flagged). 60 known points is enough for High even if another input is missing.</p>
+        <p className="tiny muted">Every patient in the original dataset was referred for DR testing with a viral load of 1000 or more, so all of them score High. The flag shows which patients need attention; the eligibility criteria and the laboratory request decide who is tested.</p>
       </Card>
       <Card title="DR-test eligibility (MoH and WHO)" subtitle="The score prioritises; these criteria decide who is tested">
         <table className="rule-table"><tbody>
