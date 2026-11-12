@@ -1,8 +1,10 @@
 import { eligibilityStatus } from './eligibility.js';
+import { FAILURE_GROUPS, isFailing } from '../components/dashboard/TreatmentLineFailure.jsx';
 export function matchesFilter(patient, filter) {
   if (filter.startsWith('elig:')) return eligibilityStatus(patient) === filter.slice(5);
   if (filter.startsWith('risk:')) return (patient.risk?.category || 'Not assessed') === filter.slice(5);
   if (filter === 'flagged') return Boolean(patient.risk?.flagged);
+  if (filter.startsWith('failing:')) { const g = FAILURE_GROUPS.find(([key]) => key === filter.slice(8)); return Boolean(g && isFailing(patient) && g[2](patient)); }
   if (filter.startsWith('line:')) return String(patient.treatment_line ?? '') === filter.slice(5);
   if (filter.startsWith('regimen:')) return String(patient.regimen ?? '') === filter.slice(8);
   switch (filter) {

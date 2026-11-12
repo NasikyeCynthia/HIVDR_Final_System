@@ -41,14 +41,14 @@ class ServiceTests(unittest.TestCase):
             self.assertEqual(con.execute('SELECT assigned_to FROM patients WHERE id=2').fetchone()[0],self.users['nurse']['id'])
         with database.connect() as con:
             con.execute("UPDATE patients SET facility='Other Facility' WHERE id=2")
-        with self.assertRaises(DomainError) as error:
+        with self.assertRaises(DomainError) as error:  # can view, cannot edit another facility
             change_patient(2,self.users['counsellor'],{},update_profile)
-        self.assertEqual(error.exception.status_code,404)
+        self.assertEqual(error.exception.status_code,403)
         with self.assertRaises(DomainError) as error:  # nurses may view all facilities but edit only their own
             change_patient(2,self.users['nurse'],{},update_profile)
         self.assertEqual(error.exception.status_code,403)
         with database.connect() as con:
-            self.assertNotIn(2,[p['id'] for p in records(con,self.users['counsellor'])])
+            self.assertIn(2,[p['id'] for p in records(con,self.users['counsellor'])])
             self.assertIn(2,[p['id'] for p in records(con,self.users['nurse'])])
             self.assertIn(2,[p['id'] for p in records(con,self.users['admin'])])
 

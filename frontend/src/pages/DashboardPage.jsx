@@ -1,6 +1,7 @@
 import AccountabilitySummary from '../components/dashboard/AccountabilitySummary.jsx';
 import RiskChart from '../components/dashboard/RiskChart.jsx';
 import EligibilityChart from '../components/dashboard/EligibilityChart.jsx';
+import TreatmentLineFailure from '../components/dashboard/TreatmentLineFailure.jsx';
 
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
@@ -44,14 +45,15 @@ export default function DashboardPage() {
     <PageHeader title="Surveillance overview" description="From patient identification to implemented care — every step in view." />
     <SharedDatasetSelector />
     <div className="stats">
-      <StatisticsCard title="Patient records" value={patients.length} description="Within selected source and facility" icon="♙" />
-      <StatisticsCard title="Flagged high risk" value={patients.filter(p => p.risk?.flagged).length} description="High risk of drug resistance" icon="◆" filter="flagged" />
-      <StatisticsCard title="Usable laboratory results" value={usable.length} description="Results available for review" icon="⌕" filter="usable" />
-      <StatisticsCard title="Awaiting clinical review" value={awaitingReview.length} description="Usable results awaiting action" icon="☷" filter="awaiting-review" />
-      <StatisticsCard title="Profiles incomplete before discussion" value={preIncomplete.length} description="Patient details to complete" icon="◇" filter="missing-pre" />
-      <StatisticsCard title="Profiles incomplete after discussion" value={postIncomplete.length} description="Committee follow-up to complete" icon="◇" filter="missing-post" />
+      <StatisticsCard tone="blue" title="Patient records" value={patients.length} description="Within selected source and facility" icon="♙" />
+      <StatisticsCard tone="crimson" title="Flagged high risk" value={patients.filter(p => p.risk?.flagged).length} description="High risk of drug resistance" icon="◆" filter="flagged" />
+      <StatisticsCard tone="teal" title="Usable laboratory results" value={usable.length} description="Results available for review" icon="⌕" filter="usable" />
+      <StatisticsCard tone="amber" title="Awaiting clinical review" value={awaitingReview.length} description="Usable results awaiting action" icon="☷" filter="awaiting-review" />
+      <StatisticsCard tone="violet" title="Profiles incomplete before discussion" value={preIncomplete.length} description="Patient details to complete" icon="◇" filter="missing-pre" />
+      <StatisticsCard tone="rose" title="Profiles incomplete after discussion" value={postIncomplete.length} description="Committee follow-up to complete" icon="◇" filter="missing-post" />
     </div>
     <div className="grid-two"><ProcessCascade patients={patients} /><ClinicalCascade patients={patients} /></div>
+    <div className="section-gap"><TreatmentLineFailure patients={patients} /></div>
     <div className="grid-half"><DecisionChart patients={patients} /><RiskChart patients={patients} /></div>
     <div className="grid-half"><EligibilityChart patients={patients} /><ProfileCompleteness patients={patients} /></div>
 

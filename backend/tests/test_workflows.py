@@ -36,7 +36,7 @@ class WorkflowTests(unittest.TestCase):
         with database.connect() as con:
             con.execute("UPDATE patients SET facility='Other Hospital' WHERE id=2")
         self.login('counsellor')
-        self.assertEqual(self.client.get('/api/patients/2').status_code,404)
+        self.assertEqual(self.client.get('/api/patients/2').status_code,200)  # everyone can view
         with database.connect() as con:
             con.execute("UPDATE users SET can_access_all=1 WHERE username='counsellor'")
         self.assertEqual(self.client.get('/api/patients/2').status_code,200)

@@ -12,7 +12,7 @@ export function WorkspaceProvider({ children }) {
   const [rules, setRules] = useState(null);
   const [integrations, setIntegrations] = useState(null);
   const { user } = useAuth();
-  const canAccessAll = ['admin', 'nurse'].includes(user.role) || Boolean(user.can_access_all);
+  const canAccessAll = true; // everyone can view all facilities; edits stay limited to their own facility
   const canManageDataset = user.role === 'admin';
   const [source, setSourceState] = useState('original');
   const [datasetSaving, setDatasetSaving] = useState(false);
