@@ -13,8 +13,8 @@ router = APIRouter(prefix='/api/workflow',tags=['Review and accountability'])
 def mark_reviewed(patient_id:int,data:ReviewRequest,user=Depends(current_user)):
     with connect() as con:
         p,e=load_patient(con,user,patient_id)
-        if user['role']!='clinician' or p['facility']!=user['facility']:
-            raise DomainError('Clinician permission at this facility required',403)
+        from ..core.permissions import require
+        require(user,'review_and_decide',p)
         if e['status']!='Usable result': raise DomainError('A usable laboratory result is required')
         if e['decision']: raise DomainError('This episode already has a final decision')
         con.execute('UPDATE episodes SET reviewed_at=COALESCE(reviewed_at,?),reviewer=?,review_notes=? WHERE patient_id=?',(now(),user['id'],data.notes,patient_id))
@@ -37,9 +37,17 @@ def assign_lab(patient_id:int,data:LabAssignmentRequest,user=Depends(current_use
 def psychosocial(patient_id:int,data:PsychosocialUpdate,user=Depends(current_user)):
     with connect() as con:
         p,e=load_patient(con,user,patient_id)
-        if user['role'] not in ('nurse','counsellor') or p['facility']!=user['facility'] or p['assigned_to'] not in (None,user['id']):
-            raise DomainError('Assigned care worker permission required',403)
+        from ..core.permissions import require
+        require(user,'record_psychosocial',p)
+        if p['assigned_to'] not in (None,user['id']):
+            raise DomainError('Only the assigned nurse/counsellor can update this assessment',403)
+        from ..services.psychosocial_service import FACTORS
+        unknown=[f for f in data.factors if f not in FACTORS]
+        if unknown: raise DomainError('Choose factors from the MoH psychosocial list: '+', '.join(unknown))
         con.execute('UPDATE patients SET psychosocial_json=?,assigned_to=? WHERE id=?',(data.model_dump_json(),user['id'],patient_id))
+        if data.assessed:
+            from ..services.record_service import overlay_changes
+            overlay_changes(con,patient_id,{'PSS:'+f:('Yes' if f in data.factors else 'No') for f in FACTORS})
         audit(con,user,'psychosocial assessment',patient_id,after=data.model_dump())
     return {'ok':True}
 
@@ -47,8 +55,8 @@ def psychosocial(patient_id:int,data:PsychosocialUpdate,user=Depends(current_use
 def interpret(patient_id:int,data:InterpretationRequest,user=Depends(current_user)):
     with connect() as con:
         p,e=load_patient(con,user,patient_id)
-        if user['role'] not in ('lab','clinician') or p['facility']!=user['facility']:
-            raise DomainError('Laboratory or clinician permission at this facility required',403)
+        from ..core.permissions import require
+        require(user,'interpret_resistance',p)
         if e['status']!='Usable result': raise DomainError('A usable laboratory result is required')
         version=e['version']
     result=stanford_service.analyze(data.kind,data.text)
