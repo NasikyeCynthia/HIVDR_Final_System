@@ -335,7 +335,13 @@ def request_repeat_sample(con, user, p, e, data):
     _guard(user, e)
     if e.get('status') not in FINAL_FAILURES:
         raise ValueError('A repeat sample can be requested after rejection, deferral or an unsuccessful test')
+    note = str((data or {}).get('note') or '').strip()
+    reason = (e.get('failure_reason') or e.get('cphl_reason') or e.get('status') or '').strip()
+    reason = f'{e.get("status")}: {reason}' if reason and reason != e.get('status') else reason
+    if note:
+        reason += f' — {note}'
     _snapshot(con, user, p['id'], e)
+    con.execute('UPDATE episodes SET repeat_reason=? WHERE patient_id=?', (reason, p['id']))
     con.execute('''UPDATE episodes SET attempt_no=COALESCE(attempt_no,1)+1,repeat_requested_at=?,status='Not collected',sample_type=NULL,
                    dbs_reason='',sample_at=NULL,centrifuged_at=NULL,tubes=NULL,whole_blood_ml=NULL,storage_temp=NULL,workflow_collection=0,
                    dispatched_at=NULL,received_at=NULL,plasma_volume_ml=NULL,cphl_outcome=NULL,cphl_reason='',dr_lab=NULL,dr_referred_at=NULL,

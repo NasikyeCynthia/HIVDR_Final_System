@@ -257,6 +257,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(self.client.post('/api/lab/1/repeat-request').status_code,200)
         p=self.client.get('/api/patients/1').json()['patient']
         self.assertEqual((p['status'],p['attempt_no']),('Not collected',2))
+        self.assertIn('Insufficient sample',p['repeat_reason'])
+        self.login('nurse')
+        notes=[r for item in self.client.get('/api/notifications').json() if item['patient_id']==1 for r in item['reasons']]
+        self.assertTrue(any(r.startswith('Repeat sample requested') for r in notes), notes)
 
     def test_view_only_roles_and_implementation_follow_up(self):
         with database.connect() as con:

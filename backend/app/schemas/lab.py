@@ -35,3 +35,7 @@ class ResultRecord(StrictModel):
     failure_reason: str = Field(default='', max_length=3000)
     mutations: str = Field(default='', max_length=15000)
     sequence: str = Field(default='', max_length=100000)
+
+
+class RepeatRequest(StrictModel):
+    note: str = Field(default='', max_length=3000)

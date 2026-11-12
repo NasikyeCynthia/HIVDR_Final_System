@@ -64,7 +64,7 @@ export default function LaboratoryForm({ patient, onSaved }) {
 
     {canEdit && options && lab.stage === 'Not collected' && <Card title="1. Record collection" subtitle="Plasma is the recommended sample: 5–8 mL whole blood in two PPT tubes, separated within 6 hours">
       {!indication && <p className="notice">No DR-test indication yet. {eligibility.next_step}</p>}
-      {patient.repeat_requested_at && <p className="notice info">Repeat sample requested {day(patient.repeat_requested_at)}.</p>}
+      {patient.repeat_requested_at && <p className="notice info">Repeat sample requested {day(patient.repeat_requested_at)}{patient.repeat_reason ? ` — ${patient.repeat_reason}` : ''}. The nurse/counsellor has been asked to bring the patient back.</p>}
       <form onSubmit={submit(labService.collection, 'Collection recorded', ['tubes', 'whole_blood_ml'])}><fieldset disabled={action.busy || !indication}><div className="form-grid">
         <Field label="Sample type"><select name="sample_type" value={kind} onChange={e => setKind(e.target.value)}><option>Plasma</option><option>DBS</option></select></Field>
         <Field label="Collected (date and time)"><input name="collected_at" type="datetime-local" max={max} required /></Field>
@@ -115,7 +115,11 @@ export default function LaboratoryForm({ patient, onSaved }) {
 
     {canEdit && ['Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'].includes(patient.status) && <Card title="Repeat sample">
       <p className="tiny muted">Starts attempt {(lab.attempt || 1) + 1}. The current attempt is kept in the laboratory history.</p>
-      <button className="btn" disabled={action.busy} onClick={() => action.run(() => labService.requestRepeat(patient.id), 'Repeat sample requested')}>Request a repeat sample</button>
+      <form onSubmit={e => { e.preventDefault(); const note = new FormData(e.currentTarget).get('note'); action.run(() => labService.requestRepeat(patient.id, note), 'Repeat sample requested; the nurse/counsellor has been notified'); }}>
+        <p className="tiny">Reason recorded: <b>{patient.failure_reason || patient.cphl_reason || patient.status}</b>. The request goes to the patient’s nurse/counsellor, who brings the patient back.</p>
+        <label htmlFor="repeat-note">Instructions for the nurse/counsellor (optional)</label><input id="repeat-note" name="note" maxLength="3000" placeholder="e.g. collect 2 plasma tubes; patient to fast is not needed" />
+        <div className="form-actions"><button className="btn" disabled={action.busy}>Request a repeat sample</button></div>
+      </form>
     </Card>}
   </>;
 }

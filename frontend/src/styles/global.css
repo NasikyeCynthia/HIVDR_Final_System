@@ -102,3 +102,9 @@ body{min-height:100vh;overflow-y:auto}
 @media(max-width:760px){.ttf-row,.ttf-scale{grid-template-columns:1fr;gap:4px}}
 .model-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.model-box{border:1px solid #e6ecef;border-radius:10px;padding:16px;background:#fbfcfd}.model-box h3{margin:0 0 8px;font-size:13px}
 @media(max-width:760px){.model-grid{grid-template-columns:1fr}}
+
+.segments{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 14px}
+.segment{display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid #dde5e9;border-radius:999px;background:#fff;color:#3c525c;font:inherit;font-size:13px;cursor:pointer}
+.segment b{background:#eef2f4;border-radius:999px;padding:1px 8px;font-size:11px}
+.segment.active{background:#14958a;border-color:#14958a;color:#fff}.segment.active b{background:#ffffff33;color:#fff}
+.result-cell{max-width:260px;font-size:12px}

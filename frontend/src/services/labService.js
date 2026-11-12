@@ -5,5 +5,5 @@ export const labService = {
   dispatch: (id, data) => request(`/lab/${id}/dispatch`, { method: 'PUT', data }),
   receipt: (id, data) => request(`/lab/${id}/receipt`, { method: 'PUT', data }),
   result: (id, data) => request(`/lab/${id}/result`, { method: 'PUT', data }),
-  requestRepeat: id => request(`/lab/${id}/repeat-request`, { method: 'POST' }),
+  requestRepeat: (id, note = '') => request(`/lab/${id}/repeat-request`, { method: 'POST', data: { note } }),
 };

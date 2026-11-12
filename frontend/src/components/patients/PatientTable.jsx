@@ -43,16 +43,21 @@ export default function PatientTable({ patients, tab = 'overview', datasetView =
     <td><Link className="text-link" to={`/patients/${patient.id}?tab=risk`}>Open →</Link></td>
   </tr>)}</tbody></table>{empty}</div>;
   // Laboratory: only sample and result variables.
-  if (tab === 'laboratory') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Sample type</th><th>Stage</th><th>Outcome</th><th>Waiting / turnaround</th><th>Laboratory officer</th><th /></tr></thead><tbody>{patients.map(patient => {
+  const cleanMutations = text => [...new Set(String(text || '').split(/[;,•]/).map(t => t.replace(/\(\d+(\.\d+)?%\)/g, '').trim()).filter(t => t && !/^none$/i.test(t)))].join(', ');
+  if (tab === 'laboratory') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Sample</th><th>Testing lab</th><th>Stage / outcome</th><th>Result</th><th>Days</th><th>Lab officer</th><th /></tr></thead><tbody>{patients.map(patient => {
     const waiting = patient.status === 'Pending' && patient.received_at ? Math.floor((Date.now() - new Date(patient.received_at)) / 86400000) : null;
+    const failed = ['Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'].includes(patient.status);
+    const mutations = cleanMutations(patient.mutations);
+    const action = patient.eligibility?.status === 'eligible' && !patient.referred_at ? ['risk', 'Request DR test →'] : patient.status === 'Not collected' ? ['laboratory', 'Record sample →'] : failed ? ['laboratory', 'Request repeat →'] : ['laboratory', patient.status === 'Pending' ? 'Update →' : 'View →'];
     return <tr key={patient.id}>
       {id(patient)}
-      <td>{patient.sample_type || '—'}</td>
-      <td>{patient.lab?.stage || '—'}{patient.lab?.flag_count ? <div><Badge color="red">{patient.lab.flag_count} quality problem(s)</Badge></div> : null}</td>
-      <td><Badge color={patient.status === 'Usable result' ? 'green' : ['Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'].includes(patient.status) ? 'red' : ''}>{patient.status}</Badge>{patient.failure_reason && patient.status !== 'Usable result' ? <div className="tiny muted">{patient.failure_reason}</div> : null}</td>
-      <td>{waiting != null ? <Badge color={waiting > 30 ? 'red' : 'yellow'}>{waiting} days at lab</Badge> : patient.report_at && patient.received_at ? `${Math.max(0, Math.round((new Date(patient.report_at) - new Date(patient.received_at)) / 86400000))} days` : '—'}</td>
+      <td>{patient.sample_type || '—'}{patient.sample_type === 'DBS' && <div className="tiny muted">{patient.dbs_reason || 'Reason not recorded'}</div>}</td>
+      <td>{patient.dr_lab || (patient.sample_type ? { Plasma: 'JCRC', DBS: 'UVRI' }[patient.sample_type] + ' (planned)' : '—')}</td>
+      <td><Badge color={patient.status === 'Usable result' ? 'green' : failed ? 'red' : ''}>{patient.status === 'Usable result' ? 'Amplified' : patient.status}</Badge><div className="tiny muted">{patient.lab?.stage}</div>{patient.lab?.flag_count ? <div><Badge color="red">{patient.lab.flag_count} quality problem(s)</Badge></div> : null}</td>
+      <td className="result-cell">{patient.status === 'Usable result' ? (mutations ? <span title={mutations}>{mutations.length > 70 ? mutations.slice(0, 70) + '…' : mutations}</span> : <span className="muted">No mutations listed</span>) : failed ? <span>{patient.failure_reason || 'Reason missing'}</span> : patient.repeat_requested_at && patient.status === 'Not collected' ? <span>Repeat requested: {patient.repeat_reason || '—'}</span> : '—'}</td>
+      <td>{waiting != null ? <Badge color={waiting > 30 ? 'red' : 'yellow'}>{waiting} at lab</Badge> : patient.report_at && (patient.received_at || patient.sample_at) ? <span>{Math.max(0, Math.round((new Date(patient.report_at) - new Date(patient.received_at || patient.sample_at)) / 86400000))} days<div className="tiny muted">from {patient.received_at ? 'CPHL receipt' : 'collection'} to result</div></span> : '—'}</td>
       <td>{patient.officer_name || patient.lab_owner_name || '—'}{patient.officer_phone ? <div className="tiny muted">{patient.officer_phone}</div> : null}</td>
-      <td><Link className="text-link" to={`/patients/${patient.id}?tab=laboratory`}>Open →</Link></td>
+      <td><Link className="text-link" to={`/patients/${patient.id}?tab=${action[0]}`}>{action[1]}</Link></td>
     </tr>; })}</tbody></table>{empty}</div>;
   // Discussion: only what the committee needs to decide and follow up.
   if (tab === 'discussion') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Regimen</th><th>Laboratory result</th><th>Profile</th><th>Decision</th><th>Implementation</th><th /></tr></thead><tbody>{patients.map(patient => <tr key={patient.id}>

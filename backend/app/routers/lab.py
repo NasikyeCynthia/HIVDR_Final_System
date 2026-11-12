@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from ..core.dependencies import current_user
-from ..schemas.lab import CollectionRecord, DispatchRecord, ReceiptRecord, ResultRecord
+from ..schemas.lab import CollectionRecord, DispatchRecord, ReceiptRecord, ResultRecord, RepeatRequest
 from ..services.workflow_service import change_patient
 from ..services import lab_service as lab
 
@@ -35,5 +35,6 @@ def result(patient_id: int, data: ResultRecord, user=Depends(current_user)):
 
 
 @router.post('/{patient_id}/repeat-request')
-def request_repeat(patient_id: int, user=Depends(current_user)):
-    return change_patient(patient_id, user, {}, lab.request_repeat_sample)
+def request_repeat(patient_id: int, data: RepeatRequest | None = None, user=Depends(current_user)):
+    # The request is shown to the patient's nurse/counsellor, who brings the patient back for a new sample.
+    return change_patient(patient_id, user, data.model_dump() if data else {}, lab.request_repeat_sample)

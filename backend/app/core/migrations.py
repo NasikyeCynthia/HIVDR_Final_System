@@ -12,7 +12,7 @@ def migrate(con):
                               'dr_lab': 'TEXT', 'dr_referred_at': 'TEXT', 'tested_at': 'TEXT', 'attempt_no': 'INTEGER DEFAULT 1',
                               'risk_category': 'TEXT', 'risk_flagged': 'INTEGER DEFAULT 0', 'risk_json': 'TEXT',
                               'officer_name': "TEXT DEFAULT ''", 'officer_phone': "TEXT DEFAULT ''", 'sequence': "TEXT DEFAULT ''",
-                              'suggestion_json': 'TEXT', 'ttf': 'TEXT', 'risk_ml': 'REAL', 'started_regimen': "TEXT DEFAULT ''", 'start_date': 'TEXT', 'previous_stop_date': 'TEXT'}}
+                              'suggestion_json': 'TEXT', 'ttf': 'TEXT', 'risk_ml': 'REAL', 'repeat_reason': "TEXT DEFAULT ''", 'started_regimen': "TEXT DEFAULT ''", 'start_date': 'TEXT', 'previous_stop_date': 'TEXT'}}
     discussion_status_added = False
     lab_stages_added = False
     for table, columns in additions.items():

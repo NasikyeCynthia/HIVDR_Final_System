@@ -17,7 +17,10 @@ def notifications(patients, follow_ups=None):
         if patient.get('amplified') == 1 and patient.get('discussion_status') == 'Pending' and patient['missing_pre']:
             reasons.append('Missing profile: ' + ', '.join(patient['missing_pre']))
         if patient['status'] in ('Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'):
-            reasons.append('Unsuccessful laboratory test: ' + (patient['failure_reason'] or 'reason missing') + ' — repeat sample needed')
+            reasons.append('Unsuccessful laboratory test: ' + (patient['failure_reason'] or 'reason missing') + ' — request a repeat sample')
+        if patient.get('repeat_requested_at') and patient['status'] == 'Not collected':
+            reasons.append('Repeat sample requested by the laboratory (' + (patient.get('repeat_reason') or 'no reason given')
+                           + '): bring the patient back for a new sample')
         lab = patient.get('lab') or {}
         if lab.get('stage') == 'At DR laboratory' and patient.get('received_at') and (date.today() - date.fromisoformat(patient['received_at'][:10])).days > 30:
             contact = f" — contact {patient.get('officer_name')} ({patient.get('officer_phone')})" if patient.get('officer_phone') else ''

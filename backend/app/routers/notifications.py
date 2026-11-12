@@ -9,10 +9,14 @@ def list_notifications(user=Depends(current_user)):
     with connect() as con:
         due = {r[0]: r[1] for r in con.execute('SELECT patient_id,min(due_date) FROM follow_ups WHERE assessed_on IS NULL GROUP BY patient_id')}
         result = notifications(records(con, user), due)
-        if user['role'] == 'nurse':
-            result = [
-                {**item, 'reasons': [reason for reason in item['reasons'] if reason.startswith(('Missing profile: ', 'Approved decision', '6-monthly', 'High risk'))]}
-                for item in result
-            ]
+        # Each role sees the work that is theirs.
+        mine = {
+            'nurse': ('Missing profile: ', 'Approved decision', '6-monthly', 'High risk', 'Repeat sample requested'),
+            'counsellor': ('Missing profile: ', 'Approved decision', '6-monthly', 'High risk', 'Repeat sample requested'),
+            'lab': ('Eligible for a DR test', 'Unsuccessful laboratory test', 'DR result overdue'),
+            'clinician': ('Usable result awaits clinician review',),
+        }.get(user['role'])
+        if mine:
+            result = [{**item, 'reasons': [r for r in item['reasons'] if r.startswith(mine)]} for item in result]
             result = [item for item in result if item['reasons']]
         return result
