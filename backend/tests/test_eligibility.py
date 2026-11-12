@@ -98,5 +98,13 @@ class EligibilityRules(unittest.TestCase):
         self.assertEqual(assess(p, raw, {'referred_at': '2026-09-10'}, today=TODAY)['status'], 'in_process')
 
 
+    def test_time_to_failure_on_current_regimen(self):
+        p, raw = adult(**{'ART@VL@DR start date': '01/01/2025', 'vl_1_Prior_To_DR': '30,000', 'VL_1_Prior_To_DR_TestDate': '10/01/2025',
+                          'vl_2_Prior_To_DR': '<20', 'VL_2_Prior_To_DR_TestDate': '01/07/2025',
+                          'VL Leading to DR': '8,000', 'VL Test Date': '01/01/2026'})
+        ttf = assess(p, raw, today=TODAY)['time_to_failure']
+        self.assertEqual(ttf['failure_date'], '2026-01-01')  # the 10 Jan 2025 VL is carried over from the old regimen
+        self.assertAlmostEqual(ttf['months'], 12.0, delta=0.1)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -2,6 +2,7 @@ import AccountabilitySummary from '../components/dashboard/AccountabilitySummary
 import RiskChart from '../components/dashboard/RiskChart.jsx';
 import EligibilityChart from '../components/dashboard/EligibilityChart.jsx';
 import TreatmentLineFailure from '../components/dashboard/TreatmentLineFailure.jsx';
+import TimeToFailure from '../components/dashboard/TimeToFailure.jsx';
 
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
@@ -54,6 +55,7 @@ export default function DashboardPage() {
     </div>
     <div className="grid-two"><ProcessCascade patients={patients} /><ClinicalCascade patients={patients} /></div>
     <div className="section-gap"><TreatmentLineFailure patients={patients} /></div>
+    <div className="section-gap"><TimeToFailure patients={patients} /></div>
     <div className="grid-half"><DecisionChart patients={patients} /><RiskChart patients={patients} /></div>
     <div className="grid-half"><EligibilityChart patients={patients} /><ProfileCompleteness patients={patients} /></div>
 
