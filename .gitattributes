@@ -1,0 +1,6 @@
+# Keep line endings consistent between Windows and GitHub
+* text=auto
+*.sqlite3 binary
+*.png binary
+*.pdf binary
+*.xlsx binary
