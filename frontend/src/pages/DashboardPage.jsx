@@ -1,5 +1,7 @@
 import AccountabilitySummary from '../components/dashboard/AccountabilitySummary.jsx';
 import RiskChart from '../components/dashboard/RiskChart.jsx';
+import EligibilityChart from '../components/dashboard/EligibilityChart.jsx';
+import HivdrCascade from '../components/dashboard/HivdrCascade.jsx';
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
@@ -43,6 +45,7 @@ export default function DashboardPage() {
     <SharedDatasetSelector />
     <div className="stats">
       <StatisticsCard title="Patient records" value={patients.length} description="Within selected source and facility" icon="♙" />
+      <StatisticsCard title="Flagged high risk" value={patients.filter(p => p.risk?.flagged).length} description="High risk of drug resistance" icon="◆" filter="flagged" />
       <StatisticsCard title="Usable laboratory results" value={usable.length} description="Results available for review" icon="⌕" filter="usable" />
       <StatisticsCard title="Awaiting clinical review" value={awaitingReview.length} description="Usable results awaiting action" icon="☷" filter="awaiting-review" />
       <StatisticsCard title="Profiles incomplete before discussion" value={preIncomplete.length} description="Patient details to complete" icon="◇" filter="missing-pre" />
@@ -50,10 +53,14 @@ export default function DashboardPage() {
     </div>
     <div className="grid-two"><ProcessCascade patients={patients} /><ClinicalCascade patients={patients} /></div>
     <div className="grid-half"><DecisionChart patients={patients} /><RiskChart patients={patients} /></div>
+    <div className="grid-half"><EligibilityChart patients={patients} /><HivdrCascade patients={patients} /></div>
     <div className="section-gap"><ProfileCompleteness patients={patients} /></div>
     <div className="grid-half"><LaboratoryOverview patients={patients} /><Card title="Needs attention" subtitle="Operational follow-through">
       <Link className="clinical-row" to="/patients?filter=failed"><span>Unsuccessful tests</span><span /><b>{patients.filter(p => ['Unamplified', 'Sequencing failed'].includes(p.status)).length}</b></Link>
       <Link className="clinical-row" to="/patients?filter=awaiting-implementation"><span>Decision not implemented</span><span /><b>{patients.filter(p => p.decision && !p.implemented_at).length}</b></Link>
+      <Link className="clinical-row" to="/patients?filter=flagged"><span>Flagged: high risk of resistance</span><span /><b>{patients.filter(p => p.risk?.flagged).length}</b></Link>
+      <Link className="clinical-row" to="/patients?filter=elig:eligible"><span>Eligible, DR test not yet requested</span><span /><b>{patients.filter(p => p.eligibility?.status === 'eligible' && !p.referred_at).length}</b></Link>
+      <Link className="clinical-row" to="/patients?filter=returned"><span>Samples rejected or deferred</span><span /><b>{patients.filter(p => ['Rejected', 'Deferred'].includes(p.status)).length}</b></Link>
       <Link className="text-link" to="/notifications">Open work queue →</Link>
     </Card></div>
     <div className="section-gap"><AccountabilitySummary patients={patients} users={users}/></div>
