@@ -21,7 +21,7 @@ def approve_decision(con, user, p, e, data):
     if e['decision']:
         raise ValueError('Decision already approved for this episode; amendment workflow is pending.')
     stamp = now()
-    con.execute('UPDATE episodes SET reviewed_at=?,reviewer=?,decision=?,discussion_status='Done',decision_at=?,decision_notes=?,recommended_regimen=? WHERE patient_id=?', (stamp, user['id'], data['decision'], stamp, data['decision_notes'], data['recommended_regimen'], pid))
+    con.execute("UPDATE episodes SET reviewed_at=?,reviewer=?,decision=?,discussion_status='Done',decision_at=?,decision_notes=?,recommended_regimen=? WHERE patient_id=?", (stamp, user['id'], data['decision'], stamp, data['decision_notes'], data['recommended_regimen'], pid))
     audit(con, user, 'clinical decision approved', pid, e, data)
     from .record_service import overlay_changes
     overlay_changes(con,pid,{'Decision Date':stamp[:10],'decision Category':data['decision'],'Decision':data['decision_notes'],'Assigned ART by switch committee':data['recommended_regimen']})
