@@ -45,8 +45,8 @@ def patient_table(ids: list[int]=Query(...), fields: list[str]=Query(default=[])
 
 @router.post('')
 def create_patient(data: PatientCreate, user=Depends(current_user)):
-    if user['role'] not in ('nurse', 'counsellor'):
-        raise DomainError('Only nurses and counsellors can register patients', 403)
+    from ..core.permissions import require
+    require(user, 'register_patient')
     external_id = data.external_id.strip()
     if not external_id:
         raise DomainError('Patient ID is required')
@@ -67,6 +67,8 @@ def create_patient(data: PatientCreate, user=Depends(current_user)):
         cur = con.execute('INSERT INTO patients(external_id,source,dataset_source,name,facility,assigned_to,original_json,created_at) VALUES(?,?,?,?,?,?,?,?)', (external_id, 'manual', data.dataset_source, data.name.strip() or 'Patient '+external_id, user['facility'], user['id'], json.dumps(raw), now()))
         con.execute('INSERT INTO episodes(patient_id) VALUES(?)', (cur.lastrowid,))
         sync_core(con,cur.lastrowid,raw)
+        from ..services.eligibility_service import refresh
+        refresh(con,cur.lastrowid)
         audit(con, user, 'register', cur.lastrowid, after={'dataset_fields_provided':len(fields)})
         return {'id': cur.lastrowid}
 
@@ -79,16 +81,14 @@ def get_patient(patient_id: int, user=Depends(current_user)):
         current_record = effective_record(p)
         patient = decorate({**p, **e, 'id': patient_id, 'suggested_mutations':suggested_mutations(current_record)})
         review_history = [dict(r) for r in con.execute('SELECT r.*,u.name AS actor FROM episode_revisions r LEFT JOIN users u ON r.actor_id=u.id WHERE patient_id=? ORDER BY r.id DESC LIMIT 50',(patient_id,))]
+        from ..services.suggestion_service import suggest
+        from ..services.psychosocial_service import recommendations
+        if not patient.get('suggestion'): patient['suggestion'] = suggest(p, e, current_record)
+        patient['psychosocial_recommendations'] = recommendations(patient.get('psychosocial'), patient.get('age'))
+        follow_ups = [dict(r) for r in con.execute('SELECT f.*,u.name AS actor FROM follow_ups f LEFT JOIN users u ON f.actor_id=u.id WHERE patient_id=? ORDER BY due_date',(patient_id,))]
+        iac_sessions = [dict(r) for r in con.execute('SELECT s.*,u.name AS actor FROM iac_sessions s LEFT JOIN users u ON s.actor_id=u.id WHERE patient_id=? ORDER BY s.session_date,s.id',(patient_id,))]
         lab_history = [dict(r) for r in con.execute('SELECT a.id,a.created_at,a.snapshot_json,u.name AS actor FROM lab_attempts a LEFT JOIN users u ON a.actor_id=u.id WHERE patient_id=? ORDER BY a.id DESC',(patient_id,))]
-        if user['role'] == 'nurse':
-            hidden_patient_fields = {'sample_type','dbs_reason','lab_owner','status','failure_reason','report_at','amplified','mutations','repeat_requested_at','reviewed_at','reviewer','review_notes','decision','decision_at','decision_notes','recommended_regimen','implemented_at','implementation_notes','missing_post','post_complete','suggested_mutations'}
-            patient = {key:value for key,value in patient.items() if key not in hidden_patient_fields}
-            original = {key:value for key,value in original.items() if not hidden_from_nurse(key)}
-            current_record = {key:value for key,value in current_record.items() if not hidden_from_nurse(key)}
-            discussion = []
-            review_history = []
-            lab_history = []
-        return {'patient': patient, 'original': original, 'current_record': current_record, 'record_sections': sections({**p,**e},user), 'review_history': review_history, 'discussion': discussion, 'lab_history': lab_history}
+        return {'patient': patient, 'original': original, 'current_record': current_record, 'record_sections': sections({**p,**e},user), 'review_history': review_history, 'discussion': discussion, 'lab_history': lab_history, 'iac_sessions': iac_sessions, 'follow_ups': follow_ups}
 
 @router.patch('/{patient_id}/profile')
 def save_profile(patient_id: int, data: ProfileUpdate, user=Depends(current_user)):

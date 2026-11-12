@@ -42,6 +42,8 @@ def import_rows(con, rows, source, user):
             if source == 'original':
                 from .history_service import map_history
                 map_history(con, pid, raw)
+            from .eligibility_service import refresh
+            refresh(con, pid)
             added += 1
         else:
             skipped += 1

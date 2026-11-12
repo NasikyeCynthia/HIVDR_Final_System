@@ -16,4 +16,6 @@ def change_patient(patient_id, user, data, operation):
             raise DomainError('Cross-facility access is read-only. Edit patients at your assigned facility.', 403)
         if patient.get('archived_at'):raise DomainError('Restore this record before editing clinical data',409)
         operation(con, user, patient, episode, data)
+        from .eligibility_service import refresh
+        refresh(con, patient_id)
     return {'ok': True}

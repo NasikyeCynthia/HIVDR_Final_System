@@ -43,6 +43,7 @@ async def integrity_error(request, error):
 
 for router in (auth, patients, risk, lab, decisions, discussions, settings, notifications, integrations, workflow, operations):
     app.include_router(router.router)
+app.include_router(risk.legacy)
 
 @app.get('/api/health', tags=['Health'])
 def health():

@@ -1,4 +1,5 @@
 from .migrations import migrate
+from ..services.eligibility_service import refresh_all, RULE_VERSION
 from ..services.record_service import repair_existing
 import csv
 import secrets
@@ -21,6 +22,12 @@ def initialize():
             (ROOT / 'data' / 'local_login.txt').write_text('LOCAL DEMO ACCOUNTS\nUsernames: admin, nurse, counsellor, lab, clinician\nPassword: ' + password + '\n', encoding='utf-8')
         if not con.execute('SELECT count(*) FROM patients').fetchone()[0]:
             seed(con)
+            refresh_all(con)  # the seed sets referral/lab states after import
+        # Recompute DR-testing eligibility whenever the rule version changes.
+        from ..services.risk_service import SCORE_VERSION
+        stale = con.execute("SELECT count(*) FROM episodes WHERE eligibility_json IS NULL OR eligibility_json NOT LIKE ? OR risk_json IS NULL OR risk_json NOT LIKE ?", ('%' + RULE_VERSION + '%', '%' + SCORE_VERSION + '%')).fetchone()[0]
+        if stale:
+            refresh_all(con)
 
 def seed(con):
     source = ROOT / 'data' / 'synthetic_patients.csv'
