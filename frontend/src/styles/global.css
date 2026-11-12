@@ -66,3 +66,5 @@ body{min-height:100vh;overflow-y:auto}
 .sidebar{overflow-y:auto;overscroll-behavior:contain}
 
 .column-picker-actions{display:flex;gap:8px;margin:10px 0}
+
+.lab-stages{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 18px}.lab-stages span{flex:1 1 120px;padding:8px 10px;font-size:11px;border-radius:6px;background:#f1f4f5;color:#7a8b93;text-align:center}.lab-stages span.done{background:var(--primary-soft);color:var(--primary)}.lab-stages span.current{background:var(--primary);color:#fff;font-weight:600}.notice .badge{margin-right:6px}

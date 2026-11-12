@@ -1,5 +1,9 @@
 import { request } from './api.js';
 export const labService = {
-  save: (id, data) => request(`/lab/${id}`, { method: 'PUT', data }),
+  options: () => request('/lab/options'),
+  collection: (id, data) => request(`/lab/${id}/collection`, { method: 'PUT', data }),
+  dispatch: (id, data) => request(`/lab/${id}/dispatch`, { method: 'PUT', data }),
+  receipt: (id, data) => request(`/lab/${id}/receipt`, { method: 'PUT', data }),
+  result: (id, data) => request(`/lab/${id}/result`, { method: 'PUT', data }),
   requestRepeat: id => request(`/lab/${id}/repeat-request`, { method: 'POST' }),
 };

@@ -33,6 +33,8 @@ def map_history(con,pid,raw):
         raw.get('All Mutations Combined') or suggested_mutations(raw),decision,discussion,decision_date,decision_date,
         'Imported documented committee decision: '+raw.get('Decision','') if decision else '',regimen,implemented,
         'Imported ART start date and patient-started regimen' if implemented else '',pid))
+    referred=date(raw.get('Date referred to DR Lab'))
+    con.execute('UPDATE episodes SET dr_referred_at=?,tested_at=?,cphl_outcome=?,dr_lab=? WHERE patient_id=?',(referred,date(raw.get('dateTestedForDR')),'Referred to DR lab' if referred else None,{'Plasma':'JCRC','DBS':'UVRI'}.get(kind) if referred else None,pid))
     flags=[key.removeprefix('PSS:') for key,val in raw.items() if key.startswith('PSS:') and str(val).lower()=='yes']
     assessed=any(str(val).lower() in ('yes','no') for key,val in raw.items() if key.startswith('PSS:'))
     con.execute('UPDATE patients SET psychosocial_json=? WHERE id=?',(json.dumps({'assessed':assessed,'factors':flags,'notes':'Imported source assessment' if assessed else ''}),pid))
