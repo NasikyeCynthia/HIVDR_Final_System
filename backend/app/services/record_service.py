@@ -26,7 +26,8 @@ def section(key):
     return 'Patient background'
 
 def hidden_from_nurse(key):
-    return section(key) in {'Laboratory', 'Discussion and committee decision'}
+    # All signed-in roles may view every section; editing is restricted by role (core/permissions.py).
+    return False
 
 def effective_record(p):
     return {**json.loads(p.get('original_json') or '{}'),**json.loads(p.get('source_overrides_json') or '{}')}

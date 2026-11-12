@@ -26,3 +26,8 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={{ user, loading, login, logout, connectionError }}>{children}</AuthContext.Provider>;
 }
 export const useAuth = () => useContext(AuthContext);
+// Role permissions come from the backend (core/permissions.py); everyone else can view.
+export function useCan() {
+  const { user } = useAuth();
+  return (action, patient) => Boolean(user?.permissions?.includes(action)) && (!patient || user.role === 'admin' || (user.facility === patient.facility && !patient.archived_at));
+}

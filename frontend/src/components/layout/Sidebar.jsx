@@ -2,15 +2,13 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 export const navigation = [
   ['/dashboard', 'Dashboard', '▦'], ['/patients', 'Patient records', '♙'],
-  ['/risk-assessment', 'Risk assessment', '◇'], ['/lab-results', 'Lab results', '⌕'],
+  ['/risk-assessment', 'Risk & eligibility', '◇'], ['/lab-results', 'Lab results', '⌕'],
   ['/resistance-classification', 'Resistance classification', '≋'], ['/discussion', 'Discussion', '☷'],
   ['/notifications', 'Notifications', '♧'], ['/settings', 'Settings', '⚙'],
 ];
 export default function Sidebar() {
   const { user } = useAuth();
-  const visibleNavigation = navigation.filter(([path]) => (
-    user.role !== 'nurse' || !['/lab-results', '/resistance-classification', '/discussion'].includes(path)
-  ));
+  const visibleNavigation = navigation;
   return <aside className="sidebar"><div className="brand"><span className="brand-mark">+</span><div>HIVDR<small>SURVEILLANCE</small></div></div><div className="nav-label">WORKSPACE</div>
     <nav aria-label="Main navigation">{visibleNavigation.map(([path, label, icon]) => <div key={path}>
       {path === '/notifications' && <div className="nav-label">MANAGEMENT</div>}

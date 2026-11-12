@@ -14,10 +14,8 @@ import NotificationsPage from './pages/NotificationsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
-function NurseRestricted({ children }) {
-  const { user } = useAuth();
-  return user.role === 'nurse' ? <Navigate to="/patients" replace /> : children;
-}
+// Every role can open every page; what each role can change is enforced per action.
+function NurseRestricted({ children }) { return children; }
 
 export default function App() {
   const { user, loading } = useAuth();

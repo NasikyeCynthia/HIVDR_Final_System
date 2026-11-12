@@ -4,14 +4,13 @@ from ..core.errors import DomainError
 from ..core.database import now
 from ..models.constants import CLINICAL_FIELDS
 from .audit_service import audit
-from .risk_service import score
 
 def update_profile(con, user, p, e, data):
     pid = p['id']
     expected=data.pop('expected_version',None)
     if expected is not None and expected!=p.get('data_version',0):raise DomainError('The profile changed. Reload before saving.',409)
-    if user['role'] not in ('nurse', 'counsellor'):
-        raise DomainError('Only nurses and counsellors can edit profiles', 403)
+    from ..core.permissions import require
+    require(user, 'edit_patient_record', p)
     if user['facility'] != p['facility']:
         raise DomainError('Edit patients at your assigned facility', 403)
     if set(data) - CLINICAL_FIELDS:

@@ -15,7 +15,7 @@ export default function PatientOverview({ patient, users, onSaved }) {
     ['Age / sex', `${patient.age ?? 'Unknown'} / ${patient.sex || 'Unknown'}`],
     ['Regimen', patient.regimen || 'Missing'],
     ['Care worker', owner],
-    ...(user.role === 'nurse' ? [] : [['Laboratory officer', labOwner]]),
+    ...([['Laboratory officer', labOwner]]),
     ['Viral load', `${formatNumber(patient.viral_load)} copies/mL`],
     ['Adherence', patient.adherence == null ? 'Missing' : `${patient.adherence}%`],
   ];
@@ -34,7 +34,7 @@ export default function PatientOverview({ patient, users, onSaved }) {
       <div className={`notice ${patient.pre_complete ? 'info' : ''}`}>
         Pre-discussion: {patient.pre_complete ? 'complete' : `missing ${patient.missing_pre.join(', ')}`}
       </div>
-      {user.role !== 'nurse' && (patient.reviewed_at
+      {(patient.reviewed_at
         ? <div className="notice">Post-discussion: {patient.post_complete ? 'complete' : `missing ${patient.missing_post.join(', ')}`}</div>
         : <p className="tiny muted">Post-discussion requirements apply after clinical review.</p>)}
       <Feedback error={action.error} success={action.success} />
@@ -61,7 +61,7 @@ export default function PatientOverview({ patient, users, onSaved }) {
         <button className="btn" style={{ marginTop: 12 }} disabled={action.busy}>Save laboratory assignment</button>
       </form>}
     </Card>
-    {user.role !== 'nurse' && <Card title="Care journey"><div className="timeline">
+    {<Card title="Care journey"><div className="timeline">
       {[
         ['Registered', patient.created_at], ['Referred for DRT', patient.referred_at],
         ['Sample collected', patient.sample_at], ['Laboratory report', patient.report_at],
