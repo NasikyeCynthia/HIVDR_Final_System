@@ -1,4 +1,4 @@
-import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useAuth, useCan } from '../../contexts/AuthContext.jsx';
 import { operationsService } from '../../services/operationsService.js';
 import usePatientAction from '../../hooks/usePatientAction.js';
 import Card from '../common/Card.jsx';
@@ -27,7 +27,7 @@ export default function ViralLoadHistory({ patient, record = {}, onSaved }) {
   const action = usePatientAction(onSaved);
   const tests = numberedTests(record);
   const nextNumber = Math.max(0, ...tests.map(test => test.number)) + 1;
-  const canEdit = ['nurse', 'counsellor'].includes(user.role) && user.facility === patient.facility && !patient.archived_at;
+  const canEdit = useCan()('edit_patient_record', patient);
 
   async function addTest(event) {
     event.preventDefault();
@@ -50,7 +50,7 @@ export default function ViralLoadHistory({ patient, record = {}, onSaved }) {
       <h3>Viral load tests</h3>
       {tests.length ? <div className="table-wrap"><table><thead><tr><th>Test</th><th>Result</th><th>Date</th></tr></thead><tbody>{tests.map(test => <tr key={test.number}><td>Test {test.number}</td><td>{test.result || 'Not recorded'}</td><td>{test.date || 'Not recorded'}</td></tr>)}</tbody></table></div> : <p className="muted">No additional prior viral load tests are recorded.</p>}
       {followUps.length > 0 && <><h3>Post-decision follow-up</h3><div className="table-wrap"><table><thead><tr><th>Follow-up</th><th>Viral load</th><th>Date</th></tr></thead><tbody>{followUps.map(([label, value, date]) => <tr key={label}><td>{label}</td><td>{value || 'Not recorded'}</td><td>{date || 'Not recorded'}</td></tr>)}</tbody></table></div></>}
-      <p className="tiny muted">Additional tests are history entries. The separate “VL leading to drug-resistance testing” field remains the input used by the existing risk and machine-learning calculations.</p>
+      <p className="tiny muted">All dated results here are used, in date order, by the eligibility rules and the risk score. Non-suppressed means 1,000 copies/mL or more (WHO).</p>
     </Card>
     {canEdit ? <Card title={`Add viral load test ${nextNumber}`}>
       <Feedback error={action.error} success={action.success}/>
