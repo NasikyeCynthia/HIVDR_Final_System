@@ -4,6 +4,7 @@ from .common import StrictModel
 
 
 class CollectionRecord(StrictModel):
+    correction_reason: str = Field(default='', max_length=3000)
     sample_type: Literal['Plasma', 'DBS']
     collected_at: str = Field(min_length=10, max_length=32)
     centrifuged_at: Optional[str] = Field(default=None, max_length=32)
@@ -17,6 +18,7 @@ class CollectionRecord(StrictModel):
 
 
 class DispatchRecord(StrictModel):
+    correction_reason: str = Field(default='', max_length=3000)
     dispatched_at: str = Field(min_length=10, max_length=32)
 
 
@@ -29,6 +31,7 @@ class ReceiptChecks(StrictModel):
 
 
 class ReceiptRecord(StrictModel):
+    correction_reason: str = Field(default='', max_length=3000)
     received_at: str = Field(min_length=10, max_length=32)
     checks: ReceiptChecks = ReceiptChecks()
     repeat_vl: float | None = Field(default=None, ge=0)   # viral load from the same blood draw, run at CPHL
@@ -47,6 +50,14 @@ class ResultRecord(StrictModel):
     mutations: str = Field(default='', max_length=15000)
     sequence: str = Field(default='', max_length=100000)
     subtype: str = Field(default='', max_length=40)
+    correction_reason: str = Field(default='', max_length=3000)
+    nrti: str = Field(default='', max_length=3000)
+    nnrti: str = Field(default='', max_length=3000)
+    pi_major: str = Field(default='', max_length=3000)
+    pi_minor: str = Field(default='', max_length=3000)
+    insti: str = Field(default='', max_length=3000)
+    other: str = Field(default='', max_length=3000)
+    drug_levels: dict[str, str] = Field(default_factory=dict)
 
 
 class RepeatRequest(StrictModel):

@@ -62,7 +62,7 @@ export default function UserManagement() {
         <FacilityOptions groups={groups} currentFacility={user.facility} />
       </select>
       <label className="checkbox">
-        <input type="checkbox" name="all" defaultChecked={user.role === 'nurse' || Boolean(user.can_access_all)} disabled={user.role === 'nurse'} />All-facility view
+        <input type="checkbox" name="all" defaultChecked={user.role === 'nurse' || Boolean(user.can_access_all)} disabled={user.role === 'nurse'} />{user.role === 'lab' ? 'Central laboratory (CPHL / DR lab): records lab steps for all facilities' : 'All facilities'}
       </label>
       <button className="btn small" disabled={busy}>Save</button>
     </form>)}

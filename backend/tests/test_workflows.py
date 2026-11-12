@@ -301,4 +301,36 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(record['patient']['cphl_vl'],25000)
         self.assertEqual(record['patient']['lab']['stage'],'At DR laboratory')
 
+    def test_lab_corrections_gene_fields_new_sample_and_central_lab(self):
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET referred_at='2026-10-01',status='Not collected',sample_at=NULL,sample_type=NULL,report_at=NULL,amplified=NULL,reviewed_at=NULL,decision=NULL,cphl_outcome=NULL,received_at=NULL WHERE patient_id=1")
+        self.login('lab')
+        col={'sample_type':'Plasma','collected_at':'2026-10-02T08:00','centrifuged_at':'2026-10-02T09:00','tubes':2,'officer_phone':'0772000111'}
+        self.assertEqual(self.client.put('/api/lab/1/collection',json=col).status_code,200)
+        self.assertEqual(self.client.put('/api/lab/1/collection',json=col).status_code,400)                       # already recorded
+        self.assertEqual(self.client.put('/api/lab/1/collection',json={**col,'correction_reason':'typo'}).status_code,400)   # reason too short
+        r=self.client.put('/api/lab/1/collection',json={**col,'centrifuged_at':'2026-10-02T10:00','correction_reason':'Wrong centrifuge time entered'})
+        self.assertEqual(r.status_code,200,r.text)
+        self.assertEqual(self.client.post('/api/lab/1/repeat-request',json={'note':''}).status_code,400)          # in process: reason needed
+        self.assertEqual(self.client.put('/api/lab/1/receipt',json={'received_at':'2026-10-04','outcome':'Referred to DR lab','plasma_volume_ml':2}).status_code,200)
+        res={'outcome':'Usable result','tested_at':'2026-10-20','released_at':'2026-10-21','nrti':'M184V K65R','nnrti':'K103N','insti':'',
+             'drug_levels':{'EFV':'High-Level Resistance','DTG':'Susceptible'}}
+        r=self.client.put('/api/lab/1/result',json=res); self.assertEqual(r.status_code,200,r.text)
+        p=self.client.get('/api/patients/1').json()
+        self.assertEqual(p['patient']['mutations'],'RT:M184V RT:K65R RT:K103N')
+        self.assertEqual(p['current_record']['NNRTI Mutations'],'K103N')
+        self.assertEqual(p['current_record']['Resistance to EFV'],'High-Level Resistance')
+        self.assertEqual(self.client.put('/api/lab/1/result',json={**res,'nrti':'M184V'}).status_code,400)        # correction needs reason
+        r=self.client.put('/api/lab/1/result',json={**res,'nrti':'M184V','correction_reason':'K65R was entered in error'})
+        self.assertEqual(r.status_code,200,r.text)
+        self.assertEqual(self.client.get('/api/patients/1').json()['patient']['mutations'],'RT:M184V RT:K103N')
+        # a laboratory account at another facility can only record with all-facility (central lab) access
+        with database.connect() as con:
+            con.execute("UPDATE patients SET facility='Other Facility' WHERE id=1")
+        self.assertEqual(self.client.put('/api/lab/1/result',json={**res,'correction_reason':'Central lab correction test'}).status_code,403)
+        with database.connect() as con:
+            con.execute("UPDATE users SET can_access_all=1 WHERE username='lab'")
+        self.login('lab')
+        self.assertEqual(self.client.put('/api/lab/1/result',json={**res,'correction_reason':'Central lab correction test'}).status_code,200)
+
 if __name__=='__main__': unittest.main()

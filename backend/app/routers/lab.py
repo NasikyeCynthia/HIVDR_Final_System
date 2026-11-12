@@ -11,7 +11,7 @@ router = APIRouter(prefix='/api/lab', tags=['Laboratory'])
 def options(user=Depends(current_user)):
     return {'storage': lab.STORAGE, 'dbs_reasons': lab.DBS_REASONS, 'rejection_reasons': lab.REJECTION_REASONS,
             'deferral_reasons': lab.DEFERRAL_REASONS, 'dr_lab': lab.DR_LAB, 'separation_hours': lab.SEPARATION_HOURS,
-            'tat_days': lab.DR_TAT_DAYS, 'sources': lab.SOURCES}
+            'tat_days': lab.DR_TAT_DAYS, 'sources': lab.SOURCES, 'drugs': lab.DRUGS, 'levels': lab.LEVELS}
 
 
 @router.put('/{patient_id}/collection')

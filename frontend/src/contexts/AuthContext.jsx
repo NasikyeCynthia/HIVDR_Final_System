@@ -29,5 +29,6 @@ export const useAuth = () => useContext(AuthContext);
 // Role permissions come from the backend (core/permissions.py); everyone else can view.
 export function useCan() {
   const { user } = useAuth();
-  return (action, patient) => Boolean(user?.permissions?.includes(action)) && (!patient || user.role === 'admin' || (user.facility === patient.facility && !patient.archived_at));
+  const central = user?.role === 'lab' && Boolean(user?.can_access_all); // CPHL / DR-lab accounts work for every facility
+  return (action, patient) => Boolean(user?.permissions?.includes(action)) && (!patient || user.role === 'admin' || ((central || user.facility === patient.facility) && !patient.archived_at));
 }

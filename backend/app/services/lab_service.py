@@ -187,6 +187,22 @@ def _guard(user, e):
         raise DomainError('This episode has been reviewed; its laboratory record is locked. Use the amendment workflow.', 409)
 
 
+def _correction(data):
+    """Returns the correction reason when a recorded step is being corrected (audited), else ''."""
+    reason = str((data or {}).get('correction_reason') or '').strip()
+    if reason and len(reason) < 10:
+        raise ValueError('Explain the correction (at least 10 characters)')
+    return reason
+
+
+DRUGS = ('BIC', 'CAB', 'DTG', 'RAL', 'ATV/r', 'DRV/r', 'LPV/r', '3TC', 'ABC', 'AZT', 'TDF', 'DOR', 'EFV', 'ETR', 'NVP')
+LEVELS = ('Susceptible', 'Potential Low-Level Resistance', 'Low-Level Resistance', 'Intermediate Resistance', 'High-Level Resistance')
+# Mutation fields as in the CPHL report: (form key, CPHL column, Stanford gene prefix)
+GENE_FIELDS = (('nrti', 'NRTI Mutations', 'RT'), ('nnrti', 'NNRTI Mutations', 'RT'), ('pi_major', 'PiMajor Mutations', 'PR'),
+               ('pi_minor', 'PiMinor Mutations', 'PR'), ('insti', 'INSTI Mutations', 'IN'), ('other', 'Other Mutations', None))
+TOKEN = re.compile(r'[A-Z]?\d+[A-Za-z*_/-]+', re.I)
+
+
 def _snapshot(con, user, pid, e):
     con.execute('INSERT INTO lab_attempts(patient_id,actor_id,created_at,snapshot_json) VALUES(?,?,?,?)',
                 (pid, user['id'], now(), json.dumps(e)))
@@ -200,13 +216,16 @@ def _overlay(con, pid, changes):
 def record_collection(con, user, p, e, data):
     _guard(user, e)
     pid = p['id']
-    if e.get('status') not in (None, 'Not collected'):
-        raise ValueError('A sample is already recorded for this attempt. Request a repeat sample to start a new attempt.')
+    correcting = _correction(data)
+    if correcting and not e.get('sample_at'):
+        raise ValueError('There is no recorded collection to correct')
+    if not correcting and e.get('status') not in (None, 'Not collected'):
+        raise ValueError('A sample is already recorded for this attempt. Correct it, or request a new sample to start a new attempt.')
 
     eligibility = json.loads(e.get('eligibility_json') or '{}')
     # MoH order: the DR test is requested first (request form, accountable officer). The one exception is the
     # repeat-VL bleed after 3 good IAC sessions, when 2 plasma samples are drawn before the repeat VL result is known.
-    if not (e.get('referred_at') or e.get('repeat_requested_at') or eligibility.get('sample_due')):
+    if not correcting and not (e.get('referred_at') or e.get('repeat_requested_at') or eligibility.get('sample_due')):
         raise ValueError('Request the DR test first (step 1), so the request form and the accountable officer are recorded. '
                          + str(eligibility.get('next_step', '')))
     kind = data.get('sample_type')
@@ -235,36 +254,51 @@ def record_collection(con, user, p, e, data):
     if storage not in STORAGE:
         raise ValueError('Choose a storage temperature')
     _snapshot(con, user, pid, e)
-    con.execute('''UPDATE episodes SET sample_type=?,dbs_reason=?,sample_at=?,centrifuged_at=?,tubes=?,whole_blood_ml=?,storage_temp=?,
-                   workflow_collection=1,lab_owner=?,officer_name=?,officer_phone=?,status='Pending',interpretation_json=NULL,interpreted_at=NULL,version=version+1
-                   WHERE patient_id=?''',
-                (kind, dbs_reason, collected, centrifuged, data.get('tubes'), data.get('whole_blood_ml'), storage, user['id'], officer, phone, pid))
+    if correcting:
+        con.execute('''UPDATE episodes SET sample_type=?,dbs_reason=?,sample_at=?,centrifuged_at=?,tubes=?,whole_blood_ml=?,storage_temp=?,
+                       officer_name=?,officer_phone=?,version=version+1 WHERE patient_id=?''',
+                    (kind, dbs_reason, collected, centrifuged, data.get('tubes'), data.get('whole_blood_ml'), storage, officer, phone, pid))
+    else:
+        con.execute('''UPDATE episodes SET sample_type=?,dbs_reason=?,sample_at=?,centrifuged_at=?,tubes=?,whole_blood_ml=?,storage_temp=?,
+                       workflow_collection=1,lab_owner=?,officer_name=?,officer_phone=?,status='Pending',interpretation_json=NULL,interpreted_at=NULL,version=version+1
+                       WHERE patient_id=?''',
+                    (kind, dbs_reason, collected, centrifuged, data.get('tubes'), data.get('whole_blood_ml'), storage, user['id'], officer, phone, pid))
     _overlay(con, pid, {'Sample Type': 'P' if kind == 'Plasma' else 'D', 'Sample collection Date': collected[:10],
                         'DBS justification': dbs_reason})
-    audit(con, user, 'DR sample collected', pid, e, data)
+    audit(con, user, 'DR sample collection corrected' if correcting else 'DR sample collected', pid, e, data)
 
 
 def record_dispatch(con, user, p, e, data):
     _guard(user, e)
-    if not e.get('sample_at') or e.get('status') != 'Pending':
+    correcting = _correction(data)
+    if correcting and not e.get('dispatched_at'):
+        raise ValueError('There is no recorded pick-up to correct')
+    if not e.get('sample_at') or (not correcting and e.get('status') != 'Pending'):
         raise ValueError('Record the sample collection first')
-    if e.get('received_at'):
+    if e.get('received_at') and not correcting:
         raise ValueError('The sample has already been received at CPHL')
     dispatched = stamp(data.get('dispatched_at'), 'Dispatch date')
     if not dispatched:
         raise ValueError('Dispatch date is required')
     not_before(dispatched, e['sample_at'], 'Dispatch', 'collection')
     con.execute('UPDATE episodes SET dispatched_at=?,version=version+1 WHERE patient_id=?', (dispatched, p['id']))
-    audit(con, user, 'DR sample dispatched', p['id'], {'dispatched_at': e.get('dispatched_at')}, data)
+    audit(con, user, 'DR sample pick-up corrected' if correcting else 'DR sample dispatched', p['id'], {'dispatched_at': e.get('dispatched_at')}, data)
 
 
 def record_receipt(con, user, p, e, data):
     _guard(user, e)
     pid = p['id']
-    if not e.get('sample_at') or e.get('status') != 'Pending':
-        raise ValueError('Record the sample collection first')
-    if e.get('cphl_outcome'):
-        raise ValueError('CPHL receipt is already recorded for this sample')
+    correcting = _correction(data)
+    if correcting:
+        if not e.get('cphl_outcome'):
+            raise ValueError('There is no recorded CPHL receipt to correct')
+        if e.get('status') in OUTCOMES:
+            raise ValueError('A DR-lab result is already recorded; correct the result instead, or request a new sample')
+    else:
+        if not e.get('sample_at') or e.get('status') != 'Pending':
+            raise ValueError('Record the sample collection first')
+        if e.get('cphl_outcome'):
+            raise ValueError('CPHL receipt is already recorded for this sample; use “Correct this step” to change it')
     received = stamp(data.get('received_at'), 'CPHL receipt date')
     if not received:
         raise ValueError('CPHL receipt date is required')
@@ -315,13 +349,19 @@ def record_receipt(con, user, p, e, data):
         _overlay(con, pid, {f'viral_load_test_{n}': str(vl), f'viral_load_test_{n}_date': str(vl_date)})
     if lab:
         _overlay(con, pid, {'Date referred to DR Lab': received[:10]})
-    audit(con, user, 'DR sample received at CPHL', pid, e, data)
+    if correcting:
+        _snapshot(con, user, pid, e)
+    audit(con, user, 'CPHL receipt corrected' if correcting else 'DR sample received at CPHL', pid, e, data)
 
 
 def record_result(con, user, p, e, data):
     _guard(user, e)
     pid = p['id']
-    if e.get('cphl_outcome') != 'Referred to DR lab' or e.get('status') != 'Pending':
+    correcting = _correction(data)
+    if correcting:
+        if e.get('status') not in OUTCOMES:
+            raise ValueError('There is no recorded result to correct')
+    elif e.get('cphl_outcome') != 'Referred to DR lab' or e.get('status') != 'Pending':
         raise ValueError('A result can only be recorded for a sample referred to the DR laboratory')
     outcome = data.get('outcome')
     if outcome not in OUTCOMES:
@@ -335,12 +375,27 @@ def record_result(con, user, p, e, data):
     failure = str(data.get('failure_reason') or '').strip()
     if outcome != 'Usable result' and not failure:
         raise ValueError('An unsuccessful-test reason is required')
-    mutations = ' '.join(str(data.get('mutations') or '').replace(',', ' ').split())
+    # Mutations may be entered per gene/drug class (as on the CPHL report) and/or as one gene-prefixed list.
+    groups = {}
+    for key, column, gene in GENE_FIELDS:
+        tokens = str(data.get(key) or '').replace(';', ',').replace(',', ' ').split()
+        bad = [t for t in tokens if not TOKEN.fullmatch(t)]
+        if bad:
+            raise ValueError(f'{column}: not recognised as mutations — ' + ', '.join(bad[:5]) + ' (write e.g. M184V K65R)')
+        groups[key] = [t.upper() for t in tokens]
+    prefixed = [f'{gene}:{t}' for key, column, gene in GENE_FIELDS if gene for t in groups[key]]
+    mutations = ' '.join(dict.fromkeys(str(data.get('mutations') or '').replace(',', ' ').split() + prefixed))  # no duplicates
+    levels = data.get('drug_levels') or {}
+    unknown = [d for d, v in levels.items() if d not in DRUGS or (v and v not in LEVELS)]
+    if unknown:
+        raise ValueError('Unrecognised drug or resistance level: ' + ', '.join(unknown))
     sequence = ''.join(line.strip() for line in str(data.get('sequence') or '').splitlines() if not line.startswith('>')).replace(' ', '').upper()
     if outcome == 'Usable result':
         # Genotypic testing (Sanger sequencing of pol) gives a sequence and its mutation list; phenotype is not used.
-        if not mutations and not sequence:
-            raise ValueError('An amplified result needs the reported mutations (e.g. RT:M184V IN:R263K) or the pol nucleotide sequence')
+        if not mutations and not sequence and not any(groups.values()):
+            no_mut = str(data.get('mutations') or '').strip().lower() in ('none', 'no mutations')
+            if not no_mut:
+                raise ValueError('An amplified result needs the reported mutations (per drug class or as a list), or the pol nucleotide sequence')
         bad = [t for t in mutations.split() if not re.fullmatch(r'(PR|RT|IN):[A-Z]?\d+[A-Za-z*_/-]+', t, re.I)]
         if bad and not mutations.lower() in ('none', 'no mutations'):
             raise ValueError('Write mutations with the gene, e.g. RT:K103N IN:G118R. Not recognised: ' + ', '.join(bad[:5]))
@@ -353,17 +408,29 @@ def record_result(con, user, p, e, data):
                    interpretation_json=NULL,interpreted_at=NULL,repeat_requested_at=NULL,version=version+1 WHERE patient_id=?''',
                 (tested, released, outcome, amplified, failure if outcome != 'Usable result' else '', mutations, sequence,
                  str(data.get('subtype') or '').strip(), discussion, pid))
-    _overlay(con, pid, {'dateTestedForDR': tested[:10], 'DR_results_releaseDate': released[:10],
-                        'amplified': str(amplified), 'Lab failure reason': failure if outcome != 'Usable result' else '',
-                        'All Mutations Combined': mutations})
-    audit(con, user, 'DR result recorded', pid, e, data)
+    changes = {'dateTestedForDR': tested[:10], 'DR_results_releaseDate': released[:10],
+               'amplified': str(amplified), 'Lab failure reason': failure if outcome != 'Usable result' else '',
+               'All Mutations Combined': '; '.join(', '.join(groups[k]) for k, _, _ in GENE_FIELDS) if any(groups.values()) else mutations}
+    for key, column, gene in GENE_FIELDS:
+        if groups[key] or correcting:
+            changes[column] = ', '.join(groups[key])
+    if groups['pi_major'] or groups['pi_minor']:
+        changes['PI Mutations Combined'] = ', '.join(groups['pi_major'] + groups['pi_minor'])
+    for drug, level in levels.items():
+        if level:
+            changes['Resistance to ' + drug] = level
+    _overlay(con, pid, changes)
+    audit(con, user, 'DR result corrected' if correcting else 'DR result recorded', pid, e, data)
 
 
 def request_repeat_sample(con, user, p, e, data):
     _guard(user, e)
-    if e.get('status') not in FINAL_FAILURES:
-        raise ValueError('A repeat sample can be requested after rejection, deferral or an unsuccessful test')
     note = str((data or {}).get('note') or '').strip()
+    if e.get('status') == 'Pending':
+        if len(note) < 5:
+            raise ValueError('Say why a new sample is needed (e.g. sample lost, leaking or broken in transit)')
+    elif e.get('status') not in FINAL_FAILURES:
+        raise ValueError('A new sample can be requested while a sample is in process, or after rejection, deferral or an unsuccessful test')
     reason = (e.get('failure_reason') or e.get('cphl_reason') or e.get('status') or '').strip()
     reason = f'{e.get("status")}: {reason}' if reason and reason != e.get('status') else reason
     if note:
