@@ -1,4 +1,5 @@
 import Card from '../common/Card.jsx';
+import { Link } from 'react-router-dom';
 import Badge, { EligibilityBadge } from '../common/Badge.jsx';
 import Feedback from '../common/Feedback.jsx';
 import { useAuth, useCan } from '../../contexts/AuthContext.jsx';
@@ -64,7 +65,7 @@ export default function RiskSummary({ patient, sessions = [], onSaved }) {
       <p className="tiny muted">Results are ordered by their own test dates; the same value recorded twice within 45 days is counted once.</p>
 
       <Feedback error={referral.error} success={referral.success} />
-      {!referred && (canRequest ? <div className="form-actions"><button className="btn" disabled={!e.eligible || referral.busy} onClick={() => referral.run(() => riskService.refer(patient.id), 'DR test requested; you are now the laboratory officer responsible for this patient')}>Request DR test</button>{!e.eligible && <span className="tiny muted">Available once the criteria are met.</span>}</div> : <ViewOnly action="request_dr_test" />)}
+      {!referred && <div className="form-actions">{e.eligible ? <span>Eligible: the DR test is requested by laboratory staff on the <Link className="text-link" to={`/patients/${patient.id}?tab=laboratory`}>Laboratory tab →</Link></span> : <span className="tiny muted">The laboratory requests the test once the criteria are met.</span>}</div>}
     </Card>
 
     <Card title="Intensive adherence counselling" subtitle="Adherence by pill count: Good ≥95% · Fair 85–94% · Poor <85% · >105% investigate">
@@ -84,10 +85,6 @@ export default function RiskSummary({ patient, sessions = [], onSaved }) {
       <div className="form-actions"><button className="btn" disabled={iac.busy}>Record IAC session</button></div></form>}
     </Card>
 
-    {canOverride && !referred && !e.eligible && <Card title="Request a DR test outside the automated criteria">
-      <p className="tiny muted">For indications this record cannot show — an HIV-positive infant born to a mother failing treatment, clinical failure (new WHO stage 3/4 event after 6 months of effective ART), or a clinician’s or committee request. Write the indication and who asked for it; it is saved with the request and audited.</p>
-      <Feedback error={override.error} success={override.success} />
-      <form onSubmit={referOverride}><label htmlFor="override-reason">Indication and who requested it</label><textarea id="override-reason" name="reason" required minLength={15} maxLength={5000} /><div className="form-actions"><button className="btn secondary" disabled={override.busy}>Request DR test</button></div></form>
-    </Card>}
+
   </>;
 }

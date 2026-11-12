@@ -34,12 +34,16 @@ def refer_for_drt(con, user, p, e, data):
         if len(reason) < 15:
             raise ValueError('Give the indication for requesting outside the automated criteria (at least 15 characters)')
         basis_text = 'Outside automated criteria: ' + reason
+    if data.get('weight_kg') is None or data.get('on_rifampicin') is None or not data.get('biorepository_consent'):
+        raise ValueError('Complete the DR section of the request form: body weight, whether the patient is on rifampicin, '
+                         'and biospecimen storage consent (accept or decline)')
     stamp = now()
     # The requesting laboratory officer becomes responsible for this patient's sample and results.
-    con.execute('UPDATE episodes SET referred_at=?,referral_basis=?,lab_owner=? WHERE patient_id=?', (stamp, basis_text, user['id'], pid))
+    con.execute('UPDATE episodes SET referred_at=?,referral_basis=?,lab_owner=?,weight_kg=?,on_rifampicin=?,biorepository_consent=? WHERE patient_id=?',
+                (stamp, basis_text, user['id'], data['weight_kg'], int(bool(data['on_rifampicin'])), data['biorepository_consent'], pid))
     from .record_service import overlay_changes
     raw = {**json.loads(p.get('original_json') or '{}'), **json.loads(p.get('source_overrides_json') or '{}')}
-    changes = {}
+    changes = {'Weight': str(data['weight_kg'])}
     if not str(raw.get('drIndication') or '').strip():
         changes['drIndication'] = result.get('indication', '')
     if changes:

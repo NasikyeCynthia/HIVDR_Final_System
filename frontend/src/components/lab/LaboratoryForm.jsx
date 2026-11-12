@@ -2,14 +2,20 @@ import { useEffect, useState } from 'react';
 import { useAuth, useCan } from '../../contexts/AuthContext.jsx';
 import ViewOnly from '../common/ViewOnly.jsx';
 import { labService } from '../../services/labService.js';
+import { riskService } from '../../services/riskService.js';
+import { Link } from 'react-router-dom';
 import usePatientAction from '../../hooks/usePatientAction.js';
 import Card from '../common/Card.jsx';
 import Badge from '../common/Badge.jsx';
 import Feedback from '../common/Feedback.jsx';
 
-// Staged HIVDR sample workflow: collection → dispatch → CPHL receipt → DR-lab result.
+// HIVDR laboratory steps in the MoH order (HIVDR Participants' Manual §5 and §7.3):
+// 1 request (request form) → 2 sample collection → 3 hub transport → 4 CPHL receipt (acceptance checks,
+// repeat viral load, refer/defer/reject) → 5 DR-lab genotype result → 6 Stanford interpretation; repeat if failed.
 // Rules are enforced by the backend (app/services/lab_service.py); this form only collects input.
-const STAGES = ['Not collected', 'Collected at facility', 'In transit', 'At CPHL', 'At DR laboratory', 'Result released'];
+const STAGES = ['Not requested', 'Requested', 'Collected at facility', 'In transit', 'At CPHL', 'At DR laboratory', 'Result released'];
+const CHECKS = [['id_matches', 'ART number on the sample matches the request form'], ['form_has_id', 'Request form has the patient’s ART or other number'],
+  ['not_haemolysed', 'Plasma is not haemolysed'], ['tube_not_empty', 'Plasma preparation tube is not empty'], ['volume_ok', 'At least 1 mL of plasma']];
 const LEVEL = { error: 'red', warning: 'yellow', info: '' };
 const when = v => v ? new Date(v).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 const day = v => v ? new Date(v).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -25,8 +31,12 @@ export default function LaboratoryForm({ patient, onSaved }) {
   const [kind, setKind] = useState('Plasma');
   const [outcome, setOutcome] = useState('Referred to DR lab');
   const [result, setResult] = useState('Usable result');
+  const [checks, setChecks] = useState(Object.fromEntries(CHECKS.map(([k]) => [k, true])));
+  const [repeatVl, setRepeatVl] = useState('');
+  const failedCheck = CHECKS.some(([k]) => !checks[k]);
+  const lowVl = repeatVl !== '' && Number(repeatVl) < 1000;
   useEffect(() => { labService.options().then(setOptions).catch(() => setOptions(null)); }, []);
-  const lab = patient.lab || { stage: 'Not collected', flags: [], tat: {} };
+  const lab = patient.lab || { stage: 'Not requested', flags: [], tat: {} };
   const can = useCan();
   const canEdit = can('record_lab', patient) && !patient.reviewed_at && !patient.decision;
   const max = nowLocal();
@@ -38,7 +48,13 @@ export default function LaboratoryForm({ patient, onSaved }) {
     action.run(() => fn(patient.id, data), message);
   };
   const eligibility = patient.eligibility || {};
-  const indication = patient.referred_at || eligibility.eligible || eligibility.sample_due;
+  const indication = patient.referred_at || patient.repeat_requested_at || eligibility.sample_due;
+  const requestForm = event => {
+    event.preventDefault();
+    const f = new FormData(event.currentTarget);
+    const body = { basis: f.get('basis'), reason: f.get('reason') || '', weight_kg: Number(f.get('weight_kg')), on_rifampicin: f.get('on_rifampicin') === 'Yes', biorepository_consent: f.get('biorepository_consent') };
+    action.run(() => riskService.refer(patient.id, body), 'DR test requested; you are the accountable laboratory officer for this patient');
+  };
 
   return <>
     <Card title="HIVDR sample" subtitle={`Attempt ${lab.attempt}${lab.dr_lab ? ` · DR laboratory: ${lab.dr_lab}` : ''}`}>
@@ -46,6 +62,8 @@ export default function LaboratoryForm({ patient, onSaved }) {
       {lab.stage === 'Returned to facility' && <p className="notice error">{patient.status === 'Rejected' ? 'Rejected at CPHL' : 'Deferred to facility'}: {patient.cphl_reason || patient.failure_reason}</p>}
       {lab.flags.map((f, i) => <p key={i} className={`notice ${f.level === 'info' ? 'info' : f.level === 'error' ? 'error' : ''}`}><Badge color={LEVEL[f.level]}>{f.level === 'error' ? 'Problem' : f.level === 'warning' ? 'Check' : 'Note'}</Badge> {f.text} <span className="tiny muted">({lab.sources?.[f.source]})</span></p>)}
       <div className="detail-list">
+        <div><label>DR test requested</label>{day(patient.referred_at)}{patient.referral_basis ? <div className="tiny muted">{patient.referral_basis}</div> : null}</div>
+        <div><label>Request form</label>{patient.weight_kg != null ? `${patient.weight_kg} kg · ${patient.on_rifampicin ? 'on rifampicin' : 'not on rifampicin'} · storage consent: ${patient.biorepository_consent || '—'}` : '—'}</div>
         <div><label>Laboratory officer in charge</label>{lab.officer?.name || '—'}{lab.officer?.phone ? <div><a className="text-link" href={`tel:${lab.officer.phone}`}>{lab.officer.phone}</a></div> : null}</div>
         <div><label>Sample type</label>{patient.sample_type || '—'}{patient.dbs_reason ? <div className="tiny muted">{patient.dbs_reason}</div> : null}</div>
         <div><label>Collected</label>{when(patient.sample_at)}</div>
@@ -56,16 +74,28 @@ export default function LaboratoryForm({ patient, onSaved }) {
         <div><label>Tested / released</label>{day(patient.tested_at)} / {day(patient.report_at)}</div>
         <div><label>Turnaround</label>{lab.tat.lab_days != null ? `${lab.tat.lab_days} days from CPHL receipt` : lab.tat.waiting_days != null ? `Waiting ${lab.tat.waiting_days} days` : '—'}{lab.tat.total_days != null ? <div className="tiny muted">{lab.tat.total_days} days from collection</div> : null}</div>
         <div><label>Outcome</label>{patient.status}{patient.failure_reason && patient.status !== 'Usable result' ? <div className="tiny muted">{patient.failure_reason}</div> : null}</div>
+        <div><label>Repeat viral load (CPHL)</label>{patient.cphl_vl != null ? `${Number(patient.cphl_vl).toLocaleString()} copies/mL · ${day(patient.cphl_vl_date)}` : '—'}</div>
         <div><label>Mutations recorded</label>{patient.mutations || '—'}</div>
+        <div><label>HIV subtype</label>{patient.subtype || '—'}</div>
       </div>
       {!canEdit && (patient.reviewed_at || patient.decision ? <p className="notice info" style={{ marginTop: 16 }}>This episode has been reviewed; the laboratory record is locked. Use the amendment workflow to correct it.</p> : <ViewOnly action="record_lab" />)}
       <Feedback error={action.error} success={action.success} />
     </Card>
 
-    {canEdit && options && lab.stage === 'Not collected' && <Card title="1. Record collection" subtitle="Plasma is the recommended sample: 5–8 mL whole blood in two PPT tubes, separated within 6 hours">
-      {!indication && <p className="notice">No DR-test indication yet. {eligibility.next_step}</p>}
+    {canEdit && options && !patient.referred_at && !patient.repeat_requested_at && patient.status === 'Not collected' && <Card title="1. Request the DR test" subtitle="The DR section of the MoH/CPHL request form; you become the accountable laboratory officer">
+      <p><b>{eligibility.label || 'Eligibility not assessed'}</b>{eligibility.indication ? ` · ${eligibility.indication}` : ''}. {eligibility.next_step}</p>
+      <form onSubmit={requestForm}><fieldset disabled={action.busy}><div className="form-grid">
+        <Field label="Basis"><select name="basis" defaultValue={eligibility.eligible ? 'guideline' : 'clinician_override'}><option value="guideline" disabled={!eligibility.eligible}>Meets MoH/WHO criteria</option><option value="clinician_override">Other indication (explain)</option></select></Field>
+        <Field label="Body weight (kg)"><input name="weight_kg" type="number" min="0.5" max="250" step="0.1" required /></Field>
+        <Field label="Patient on rifampicin?"><select name="on_rifampicin" required defaultValue=""><option value="" disabled>Choose…</option><option>No</option><option>Yes</option></select></Field>
+        <Field label="Biospecimen storage consent"><select name="biorepository_consent" required defaultValue=""><option value="" disabled>Choose…</option><option>Accept</option><option>Decline</option></select></Field>
+        <Field label="Indication / note (required for other indications: e.g. infant of a mother failing treatment, clinician’s request)" full><input name="reason" maxLength="5000" /></Field>
+      </div><div className="form-actions"><button className="btn">Request DR test</button></div></fieldset></form>
+    </Card>}
+
+    {canEdit && options && ['Not requested', 'Requested'].includes(lab.stage) && patient.status === 'Not collected' && (indication ? true : null) && <Card title="2. Record sample collection" subtitle="Plasma is the recommended sample: 5–8 mL whole blood in two PPT tubes (one for the repeat viral load, one for HIVDR), separated within 6 hours">
       {patient.repeat_requested_at && <p className="notice info">Repeat sample requested {day(patient.repeat_requested_at)}{patient.repeat_reason ? ` — ${patient.repeat_reason}` : ''}. The nurse/counsellor has been asked to bring the patient back.</p>}
-      <form onSubmit={submit(labService.collection, 'Collection recorded', ['tubes', 'whole_blood_ml'])}><fieldset disabled={action.busy || !indication}><div className="form-grid">
+      <form onSubmit={submit(labService.collection, 'Collection recorded', ['tubes', 'whole_blood_ml'])}><fieldset disabled={action.busy}><div className="form-grid">
         <Field label="Sample type"><select name="sample_type" value={kind} onChange={e => setKind(e.target.value)}><option>Plasma</option><option>DBS</option></select></Field>
         <Field label="Collected (date and time)"><input name="collected_at" type="datetime-local" max={max} required /></Field>
         <Field label="Laboratory officer in charge"><input name="officer_name" defaultValue={user.name} required maxLength="200" /></Field>
@@ -82,24 +112,34 @@ export default function LaboratoryForm({ patient, onSaved }) {
       </div><div className="form-actions"><button className="btn">Record collection</button></div></fieldset></form>
     </Card>}
 
-    {canEdit && options && lab.stage === 'Collected at facility' && <Card title="2. Record hub pick-up" subtitle="Target: picked up within 2 days, kept at 4–8 °C">
+    {canEdit && options && lab.stage === 'Collected at facility' && <Card title="3. Record hub pick-up" subtitle="Target: picked up within 2 days, kept at 4–8 °C">
       <form onSubmit={submit(labService.dispatch, 'Dispatch recorded')}><fieldset disabled={action.busy}><div className="form-grid">
         <Field label="Picked up / dispatched"><input name="dispatched_at" type="date" max={max.slice(0, 10)} required /></Field>
       </div><div className="form-actions"><button className="btn">Record dispatch</button></div></fieldset></form>
     </Card>}
 
-    {canEdit && options && ['Collected at facility', 'In transit'].includes(lab.stage) && <Card title="3. Record receipt at CPHL" subtitle={`Viable samples go to ${patient.sample_type === 'DBS' ? 'UVRI (DBS)' : 'JCRC (plasma)'}; others are deferred or rejected`}>
-      {eligibility.status === 'suppressed' && <p className="notice">The latest recorded viral load is not above 1000 copies/mL. If that is the repeat VL, defer as “Below threshold for HIVDR testing”.</p>}
-      <form onSubmit={submit(labService.receipt, 'CPHL receipt recorded', ['plasma_volume_ml'])}><fieldset disabled={action.busy}><div className="form-grid">
+    {canEdit && options && ['Collected at facility', 'In transit'].includes(lab.stage) && <Card title="4. Record receipt at CPHL" subtitle={`a) check the sample · b) record the repeat viral load · c) refer to ${patient.sample_type === 'DBS' ? 'UVRI (DBS)' : 'JCRC (plasma)'}, defer or reject`}>
+      <form onSubmit={event => { event.preventDefault(); const data = numbers(Object.fromEntries(new FormData(event.currentTarget)), ['plasma_volume_ml', 'repeat_vl']); for (const k of Object.keys(data)) if (data[k] === '' || data[k] == null) delete data[k]; for (const [k] of CHECKS) delete data[k]; data.checks = checks; action.run(() => labService.receipt(patient.id, data), 'CPHL receipt recorded'); }}><fieldset disabled={action.busy}>
+        <h3 className="ttf-heading">a) Sample acceptance checks (MoH rejection criteria)</h3>
+        <div className="check-grid">{CHECKS.map(([k, label]) => <label className="checkbox" key={k}><input type="checkbox" checked={checks[k]} onChange={e => { const next = { ...checks, [k]: e.target.checked }; setChecks(next); if (!e.target.checked) setOutcome('Rejected'); }} />{label}</label>)}</div>
+        {failedCheck && <p className="notice error">A check failed: the sample must be rejected and recollected.</p>}
+        <h3 className="ttf-heading">b) Repeat viral load from the same blood draw</h3>
+        <div className="form-grid">
+          <Field label="Repeat viral load (copies/mL)"><input name="repeat_vl" type="number" min="0" value={repeatVl} onChange={e => { setRepeatVl(e.target.value); if (e.target.value !== '' && Number(e.target.value) < 1000 && !failedCheck) setOutcome('Deferred to facility'); }} /></Field>
+          <Field label="Viral load date"><input name="repeat_vl_date" type="date" max={max.slice(0, 10)} required={repeatVl !== ''} /></Field>
+        </div>
+        {lowVl && <p className="notice">Below 1000 copies/mL: the DR test does not go ahead. Defer as “Below threshold for HIVDR testing”.</p>}
+        <h3 className="ttf-heading">c) Decision</h3>
+        <div className="form-grid">
         <Field label="Received at CPHL"><input name="received_at" type="date" max={max.slice(0, 10)} required /></Field>
         <Field label="Plasma volume received (mL)"><input name="plasma_volume_ml" type="number" min="0" max="20" step="0.1" /></Field>
-        <Field label="Decision"><select name="outcome" value={outcome} onChange={e => setOutcome(e.target.value)}><option>Referred to DR lab</option><option>Deferred to facility</option><option>Rejected</option></select></Field>
-        {outcome !== 'Referred to DR lab' && <Field label="Reason"><select name="reason" required defaultValue=""><option value="" disabled>Choose…</option>{(outcome === 'Rejected' ? options.rejection_reasons : options.deferral_reasons).map(s => <option key={s}>{s}</option>)}</select></Field>}
+        <Field label="Decision"><select name="outcome" value={outcome} onChange={e => setOutcome(e.target.value)}><option disabled={failedCheck || lowVl}>Referred to DR lab</option><option disabled={failedCheck}>Deferred to facility</option><option>Rejected</option></select></Field>
+        {outcome !== 'Referred to DR lab' && <Field label="Reason"><select name="reason" required key={outcome + lowVl} defaultValue={outcome === 'Deferred to facility' && lowVl ? 'Below threshold for HIVDR testing' : ''}><option value="" disabled>Choose…</option>{(outcome === 'Rejected' ? options.rejection_reasons : options.deferral_reasons).map(s => <option key={s}>{s}</option>)}</select></Field>}
         {outcome !== 'Referred to DR lab' && <Field label="Explanation" full><input name="note" maxLength="3000" /></Field>}
       </div><div className="form-actions"><button className="btn">Record receipt</button></div></fieldset></form>
     </Card>}
 
-    {canEdit && options && lab.stage === 'At DR laboratory' && <Card title="4. Record DR-lab result" subtitle={`Turnaround target ${options.tat_days} days from CPHL receipt`}>
+    {canEdit && options && lab.stage === 'At DR laboratory' && <Card title="5. Record the genotype result" subtitle={`Turnaround target ${options.tat_days} days from CPHL receipt`}>
       <form onSubmit={submit(labService.result, 'Result recorded')}><fieldset disabled={action.busy}><div className="form-grid">
         <Field label="Outcome"><select name="outcome" value={result} onChange={e => setResult(e.target.value)}><option>Usable result</option><option>Unamplified</option><option>Sequencing failed</option></select></Field>
         <Field label="Tested on"><input name="tested_at" type="date" max={max.slice(0, 10)} required /></Field>
@@ -108,9 +148,15 @@ export default function LaboratoryForm({ patient, onSaved }) {
         {result === 'Usable result' && <>
           <Field label="Mutations from the genotype report, with gene (e.g. RT:M184V RT:K103N IN:R263K)" full><textarea name="mutations" maxLength="15000" placeholder="Write “none” if the report lists no mutations" /></Field>
           <Field label="Or paste the pol nucleotide sequence (FASTA)" full><textarea name="sequence" maxLength="100000" /></Field>
+          <Field label="HIV-1 subtype (from the report or Stanford, e.g. A1, D, C)"><input name="subtype" maxLength="40" /></Field>
           <p className="tiny muted field full">HIVDR testing in Uganda is genotypic: the lab sequences the pol gene (protease, reverse transcriptase, integrase) and reports mutations. Phenotypic testing is not used. Either the mutation list or the sequence is needed for the Stanford interpretation.</p>
         </>}
       </div><div className="form-actions"><button className="btn">Record result</button></div></fieldset></form>
+    </Card>}
+
+    {patient.status === 'Usable result' && <Card title="6. Interpret the result" subtitle="Stanford HIVdb drug-level interpretation, then release to the facility">
+      <p>Run the Stanford interpretation on the Resistance tab. The drug levels feed the committee’s suggested action.</p>
+      <Link className="btn" to={`/patients/${patient.id}?tab=resistance`}>Open Resistance tab →</Link>
     </Card>}
 
     {canEdit && ['Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'].includes(patient.status) && <Card title="Repeat sample">

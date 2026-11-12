@@ -216,7 +216,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(self.client.get(f'/api/patients/{pid}').json()['patient']['eligibility']['status'],'eligible')
         self.assertEqual(self.client.post(f'/api/eligibility/{pid}/refer',json={}).status_code,403)  # counsellors cannot request
         self.login('lab')
-        self.assertEqual(self.client.post(f'/api/eligibility/{pid}/refer',json={}).status_code,200)
+        self.assertEqual(self.client.post(f'/api/eligibility/{pid}/refer',json={}).status_code,400)  # request form incomplete
+        self.assertEqual(self.client.post(f'/api/eligibility/{pid}/refer',json={'weight_kg':60,'on_rifampicin':False,'biorepository_consent':'Accept'}).status_code,200)
         lab_id=self.client.get('/api/auth/me').json()['id']
         self.assertEqual(self.client.get(f'/api/patients/{pid}').json()['patient']['lab_owner'],lab_id)  # accountable officer
         self.assertEqual(self.client.get(f'/api/eligibility/{pid}').json()['status'],'in_process')
@@ -230,7 +231,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(self.client.post('/api/eligibility/2/refer',json={'basis':'clinician_override','reason':'infant of failing mother'}).status_code,403)
         self.login('lab')
         self.assertEqual(self.client.post('/api/eligibility/2/refer',json={'basis':'clinician_override','reason':'short'}).status_code,400)
-        r=self.client.post('/api/eligibility/2/refer',json={'basis':'clinician_override','reason':'HIV-positive infant born to a mother failing second line'})
+        r=self.client.post('/api/eligibility/2/refer',json={'basis':'clinician_override','reason':'HIV-positive infant born to a mother failing second line','weight_kg':60,'on_rifampicin':False,'biorepository_consent':'Accept'})
         self.assertEqual(r.status_code,200,r.text)
 
     def test_lab_stages_enforce_moh_sample_rules(self):
@@ -284,5 +285,20 @@ class WorkflowTests(unittest.TestCase):
         r=self.client.post('/api/decisions/1/follow-up',json={'care_status':'Alive and on treatment','vl_copies':40,'vl_date':'2026-11-01'})
         self.assertEqual(r.status_code,200,r.text)
         self.assertEqual(len(self.client.get('/api/patients/1').json()['follow_ups']),2)
+
+    def test_cphl_receipt_checks_and_repeat_viral_load(self):
+        with database.connect() as con:
+            con.execute("UPDATE episodes SET referred_at='2026-10-01',status='Not collected',sample_at=NULL,sample_type=NULL,report_at=NULL,amplified=NULL,reviewed_at=NULL,decision=NULL,cphl_outcome=NULL,received_at=NULL WHERE patient_id=1")
+        self.login('lab')
+        self.assertEqual(self.client.put('/api/lab/1/collection',json={'sample_type':'Plasma','collected_at':'2026-10-02T08:00','centrifuged_at':'2026-10-02T09:00','tubes':2,'officer_phone':'0772000111'}).status_code,200)
+        bad={'received_at':'2026-10-04','outcome':'Referred to DR lab','checks':{'id_matches':False}}
+        self.assertEqual(self.client.put('/api/lab/1/receipt',json=bad).status_code,400)   # failed check must be rejected
+        low={'received_at':'2026-10-04','outcome':'Referred to DR lab','repeat_vl':400,'repeat_vl_date':'2026-10-03'}
+        self.assertEqual(self.client.put('/api/lab/1/receipt',json=low).status_code,400)   # VL below 1000 must be deferred
+        ok={'received_at':'2026-10-04','outcome':'Referred to DR lab','plasma_volume_ml':2,'repeat_vl':25000,'repeat_vl_date':'2026-10-03'}
+        r=self.client.put('/api/lab/1/receipt',json=ok); self.assertEqual(r.status_code,200,r.text)
+        record=self.client.get('/api/patients/1').json()
+        self.assertEqual(record['patient']['cphl_vl'],25000)
+        self.assertEqual(record['patient']['lab']['stage'],'At DR laboratory')
 
 if __name__=='__main__': unittest.main()

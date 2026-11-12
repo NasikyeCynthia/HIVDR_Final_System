@@ -14,3 +14,7 @@ class IACSessionCreate(StrictModel):
 class ReferralRequest(StrictModel):
     basis: Literal['guideline', 'clinician_override'] = 'guideline'
     reason: str = Field(default='', max_length=5000)
+    # 'Information for HIV drug resistance testing only' on the MoH/CPHL request form
+    weight_kg: float | None = Field(default=None, ge=0.5, le=250)
+    on_rifampicin: bool | None = None
+    biorepository_consent: Literal['Accept', 'Decline'] | None = None

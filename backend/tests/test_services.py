@@ -108,7 +108,7 @@ class ServiceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 change_patient(1,self.users['nurse'],data,update_profile)
         with self.assertRaises(ValueError):
-            change_patient(1,self.users['lab'],{},refer_for_drt)
+            change_patient(1,self.users['lab'],{'weight_kg':60,'on_rifampicin':False,'biorepository_consent':'Accept'},refer_for_drt)
         with self.assertRaises(DomainError):  # only laboratory staff request DR tests
             change_patient(1,self.users['clinician'],{},refer_for_drt)
 

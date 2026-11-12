@@ -43,6 +43,8 @@ REJECTION_REASONS = ('Haemolysed plasma', 'ART number on sample and form do not 
                      'Empty plasma preparation tube (PPT)', 'Insufficient sample (less than 1 mL plasma)',
                      'Request form without patient identification (ART or other number)', 'Other (explain)')
 DEFERRAL_REASONS = ('Sample is used up', 'Below threshold for HIVDR testing', 'Other (explain)')
+REJECT_FOR_CHECK = {'id_matches': REJECTION_REASONS[1], 'form_has_id': REJECTION_REASONS[4],
+                    'not_haemolysed': REJECTION_REASONS[0], 'tube_not_empty': REJECTION_REASONS[2], 'volume_ok': REJECTION_REASONS[3]}
 DR_LAB = {'Plasma': 'JCRC', 'DBS': 'UVRI'}
 OUTCOMES = ('Usable result', 'Unamplified', 'Sequencing failed')
 FINAL_FAILURES = ('Unamplified', 'Sequencing failed', 'Rejected', 'Deferred')
@@ -167,8 +169,10 @@ def assess(e):
         stage = 'In transit'
     elif collected:
         stage = 'Collected at facility'
+    elif e.get('referred_at') or e.get('repeat_requested_at'):
+        stage = 'Requested'
     else:
-        stage = 'Not collected'
+        stage = 'Not requested'
     return {'stage': stage, 'flags': flags, 'tat': tat, 'attempt': e.get('attempt_no') or 1,
             'officer': {'name': e.get('officer_name') or '', 'phone': e.get('officer_phone') or ''},
             'dr_lab': e.get('dr_lab') or None, 'sources': SOURCES}
@@ -198,10 +202,13 @@ def record_collection(con, user, p, e, data):
     pid = p['id']
     if e.get('status') not in (None, 'Not collected'):
         raise ValueError('A sample is already recorded for this attempt. Request a repeat sample to start a new attempt.')
+
     eligibility = json.loads(e.get('eligibility_json') or '{}')
-    if not (e.get('referred_at') or eligibility.get('eligible') or eligibility.get('sample_due')):
-        raise ValueError('No DR-test indication yet: collect at the repeat viral load after 3 consecutive good IAC sessions, '
-                         'or once the patient is eligible or referred. ' + str(eligibility.get('next_step', '')))
+    # MoH order: the DR test is requested first (request form, accountable officer). The one exception is the
+    # repeat-VL bleed after 3 good IAC sessions, when 2 plasma samples are drawn before the repeat VL result is known.
+    if not (e.get('referred_at') or e.get('repeat_requested_at') or eligibility.get('sample_due')):
+        raise ValueError('Request the DR test first (step 1), so the request form and the accountable officer are recorded. '
+                         + str(eligibility.get('next_step', '')))
     kind = data.get('sample_type')
     if kind not in DR_LAB:
         raise ValueError('Choose plasma or DBS')
@@ -266,6 +273,21 @@ def record_receipt(con, user, p, e, data):
     reason = str(data.get('reason') or '').strip()
     note = str(data.get('note') or '').strip()
     volume = data.get('plasma_volume_ml')
+    # 1. Sample acceptance checks — the MoH rejection criteria [M-5.2a]
+    checks = data.get('checks') or {}
+    failed = [REJECT_FOR_CHECK[k] for k in REJECT_FOR_CHECK if checks.get(k) is False]
+    if volume is not None and volume < MIN_PLASMA_ML and REJECTION_REASONS[3] not in failed:
+        failed.append(REJECTION_REASONS[3])
+    if failed and outcome != 'Rejected':
+        raise ValueError('The sample fails an acceptance check (' + '; '.join(failed) + '): record it as rejected')
+    if failed and reason not in failed:
+        reason = failed[0]
+    # 2. Repeat viral load from the same blood draw decides whether the DR test goes ahead [M-7.3.1]
+    vl, vl_date = data.get('repeat_vl'), data.get('repeat_vl_date')
+    if vl is not None and not vl_date:
+        raise ValueError('Give the date of the repeat viral load')
+    if vl is not None and vl < 1000 and outcome == 'Referred to DR lab':
+        raise ValueError('The repeat viral load is below 1000 copies/mL: defer as "Below threshold for HIVDR testing"')
     if outcome == 'Referred to DR lab':
         if e.get('sample_type') == 'Plasma' and volume is not None and volume < MIN_PLASMA_ML:
             raise ValueError('Less than 1 mL plasma is a rejection criterion: record the sample as rejected')
@@ -284,8 +306,13 @@ def record_receipt(con, user, p, e, data):
         raise ValueError('Explain the reason')
     full_reason = (reason + (f' — {note}' if note else '')) if reason else ''
     con.execute('''UPDATE episodes SET received_at=?,plasma_volume_ml=?,cphl_outcome=?,cphl_reason=?,dr_lab=?,dr_referred_at=?,
-                   status=?,failure_reason=?,version=version+1 WHERE patient_id=?''',
-                (received, volume, outcome, full_reason, lab, received if lab else None, status, full_reason, pid))
+                   status=?,failure_reason=?,receipt_checks=?,cphl_vl=?,cphl_vl_date=?,version=version+1 WHERE patient_id=?''',
+                (received, volume, outcome, full_reason, lab, received if lab else None, status, full_reason,
+                 json.dumps(checks), vl, str(vl_date) if vl_date else None, pid))
+    if vl is not None:
+        raw = {**json.loads(p.get('original_json') or '{}'), **json.loads(p.get('source_overrides_json') or '{}')}
+        n = 1 + max([int(k.rsplit('_', 1)[1]) for k in raw if re.fullmatch(r'viral_load_test_\d+', k)] or [0])
+        _overlay(con, pid, {f'viral_load_test_{n}': str(vl), f'viral_load_test_{n}_date': str(vl_date)})
     if lab:
         _overlay(con, pid, {'Date referred to DR Lab': received[:10]})
     audit(con, user, 'DR sample received at CPHL', pid, e, data)
@@ -322,9 +349,10 @@ def record_result(con, user, p, e, data):
     amplified = 0 if outcome == 'Unamplified' else 1
     _snapshot(con, user, pid, e)
     discussion = classify_discussion(None, e.get('decision'), amplified if outcome == 'Usable result' else None)
-    con.execute('''UPDATE episodes SET tested_at=?,report_at=?,status=?,amplified=?,failure_reason=?,mutations=?,sequence=?,discussion_status=?,
+    con.execute('''UPDATE episodes SET tested_at=?,report_at=?,status=?,amplified=?,failure_reason=?,mutations=?,sequence=?,subtype=?,discussion_status=?,
                    interpretation_json=NULL,interpreted_at=NULL,repeat_requested_at=NULL,version=version+1 WHERE patient_id=?''',
-                (tested, released, outcome, amplified, failure if outcome != 'Usable result' else '', mutations, sequence, discussion, pid))
+                (tested, released, outcome, amplified, failure if outcome != 'Usable result' else '', mutations, sequence,
+                 str(data.get('subtype') or '').strip(), discussion, pid))
     _overlay(con, pid, {'dateTestedForDR': tested[:10], 'DR_results_releaseDate': released[:10],
                         'amplified': str(amplified), 'Lab failure reason': failure if outcome != 'Usable result' else '',
                         'All Mutations Combined': mutations})
@@ -345,6 +373,6 @@ def request_repeat_sample(con, user, p, e, data):
     con.execute('''UPDATE episodes SET attempt_no=COALESCE(attempt_no,1)+1,repeat_requested_at=?,status='Not collected',sample_type=NULL,
                    dbs_reason='',sample_at=NULL,centrifuged_at=NULL,tubes=NULL,whole_blood_ml=NULL,storage_temp=NULL,workflow_collection=0,
                    dispatched_at=NULL,received_at=NULL,plasma_volume_ml=NULL,cphl_outcome=NULL,cphl_reason='',dr_lab=NULL,dr_referred_at=NULL,
-                   tested_at=NULL,report_at=NULL,amplified=NULL,failure_reason='',mutations='',sequence='',officer_name='',officer_phone='',interpretation_json=NULL,interpreted_at=NULL,
+                   tested_at=NULL,report_at=NULL,amplified=NULL,failure_reason='',mutations='',sequence='',subtype='',receipt_checks=NULL,cphl_vl=NULL,cphl_vl_date=NULL,officer_name='',officer_phone='',interpretation_json=NULL,interpreted_at=NULL,
                    version=version+1 WHERE patient_id=?''', (now(), p['id']))
     audit(con, user, 'repeat sample requested', p['id'], e)
