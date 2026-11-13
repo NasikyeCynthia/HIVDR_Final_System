@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {EXPOSURES, DRUG_GROUPS, exposureValue, regimenDrugs, resistanceResult} from './resistance.js';
+import {EXPOSURES, DRUG_GROUPS, exposureValue, regimenDrugs, resistanceResult, MUTATION_GROUPS, RESISTANCE_FIELDS, mutationValue, sampleTreatment} from './resistance.js';
 
 test('default view includes all requested exposures and drug groups',()=>{
   assert.equal(EXPOSURES.length,7);
@@ -26,4 +26,16 @@ test('saved Stanford results take precedence without filling coverage gaps from 
 test('recorded reports are labeled separately from missing results',()=>{
   assert.equal(resistanceResult('DTG',null,{'Resistance to DTG':'Susceptible'}).source,'Recorded laboratory report');
   assert.equal(resistanceResult('DTG',null,{}).text,'Not recorded');
+});
+test('original mutation columns are requested and displayed with report frequencies',()=>{
+  for(const key of ['PI','INSTI','NRTI','NNRTI'])assert.ok(RESISTANCE_FIELDS.includes(key));
+  assert.equal(mutationValue({INSTI:'E157Q(99.7%)'},MUTATION_GROUPS[1]),'E157Q(99.7%)');
+  assert.equal(mutationValue({PI:',', 'PiMajor Mutations':'M46I'},MUTATION_GROUPS[0]),'M46I');
+  assert.equal(mutationValue({PI:','},MUTATION_GROUPS[0]),'');
+  assert.equal(resistanceResult('DTG',null,{INSTI:'E157Q(99.7%)'}).text,'Awaiting interpretation');
+});
+test('sample ART and treatment line are separate and prefer their dataset fields',()=>{
+  assert.deepEqual(sampleTreatment({regimen:'old regimen',treatment_line:1},
+    {'ART at sample collection(ART@VL@DR)':'AZT+3TC+DTG','Treatment Line at Sample collection':'Second Line'}),
+    {regimen:'AZT+3TC+DTG',line:'Second Line'});
 });

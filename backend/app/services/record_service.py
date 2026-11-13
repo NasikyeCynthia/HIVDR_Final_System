@@ -94,8 +94,15 @@ def update_fields(con,user,p,e,data):
         status='Usable result' if amp==1 else 'Unamplified' if amp==0 else 'Pending'
         discussion=classify_discussion(raw.get('decision Category'),e.get('decision'),amp)
         con.execute('INSERT INTO lab_attempts(patient_id,actor_id,created_at,snapshot_json) VALUES(?,?,?,?)',(p['id'],user['id'],now(),json.dumps(e)))
-        con.execute('UPDATE episodes SET lab_owner=?,sample_type=?,failure_reason=?,dbs_reason=?,sample_at=?,report_at=?,amplified=?,status=?,discussion_status=?,mutations=?,interpretation_json=NULL,interpreted_at=NULL,version=version+1 WHERE patient_id=?',
-          (user['id'],kind,failure,dbs_reason,date(raw.get('Sample collection Date')),date(raw.get('DR_results_releaseDate')),amp,status,discussion,raw.get('All Mutations Combined') or e['mutations'],p['id']))
+        from .mutation_inputs import GROUPS,suggested_mutations
+        mutation_keys={key for _,columns in GROUPS.values() for key in columns}
+        mutation_text=raw.get('All Mutations Combined') or e['mutations']
+        if any(key in mutation_keys for key in changes):
+            mutation_text=suggested_mutations({**raw,'All Mutations Combined':''})
+            overrides['All Mutations Combined']=mutation_text
+            con.execute('UPDATE patients SET source_overrides_json=? WHERE id=?',(json.dumps(overrides),p['id']))
+        con.execute('UPDATE episodes SET lab_owner=?,sample_type=?,failure_reason=?,dbs_reason=?,sample_at=?,report_at=?,amplified=?,status=?,discussion_status=?,mutations=?,interpretation_json=NULL,interpreted_at=NULL,suggestion_json=NULL,version=version+1 WHERE patient_id=?',
+          (user['id'],kind,failure,dbs_reason,date(raw.get('Sample collection Date')),date(raw.get('DR_results_releaseDate')),amp,status,discussion,mutation_text,p['id']))
     if any(key.startswith('PSS:') for key in changes):
         psy={'assessed':any(str(v).lower() in ('yes','no') for k,v in raw.items() if k.startswith('PSS:')),'factors':[k[4:] for k,v in raw.items() if k.startswith('PSS:') and str(v).lower()=='yes'],'notes':'Recorded psychosocial fields'}
         con.execute('UPDATE patients SET psychosocial_json=? WHERE id=?',(json.dumps(psy),p['id']))

@@ -124,3 +124,5 @@ body{min-height:100vh;overflow-y:auto}
 .resistance-patient-table .badge{white-space:normal;line-height:1.5}
 .resistance-patient-table tbody td:last-child,.resistance-patient-table thead tr:first-child th:last-child{position:sticky;right:0;background:#fff;z-index:1;min-width:135px;box-shadow:-2px 0 3px #0001}
 .resistance-patient-table thead tr:first-child th:last-child{background:#edf4f6;z-index:2}
+
+.mutation-cell{min-width:230px!important;max-width:360px;white-space:normal;overflow-wrap:anywhere}.mutation-entry{scroll-margin-top:20px}

@@ -10,7 +10,7 @@ from ..services.profile_service import update_profile, assign_care_worker
 from ..services.workflow_service import load_patient, change_patient
 from ..services.audit_service import audit
 from ..services.record_service import effective_record,sections,COLUMNS,section,sync_core,is_extra_vl_field,hidden_from_nurse
-from ..services.mutation_inputs import suggested_mutations
+from ..services.mutation_inputs import suggested_mutations, analysis_input
 
 router = APIRouter(prefix='/api/patients', tags=['Patients'])
 
@@ -96,7 +96,7 @@ def get_patient(patient_id: int, user=Depends(current_user)):
         discussion = [dict(row) for row in con.execute('SELECT d.*,u.name AS author_name FROM discussions d JOIN users u ON d.author=u.id WHERE patient_id=? ORDER BY d.id', (patient_id,))]
         original = json.loads(p['original_json'])
         current_record = effective_record(p)
-        patient = decorate({**p, **e, 'id': patient_id, 'suggested_mutations':e.get('mutations') or suggested_mutations(current_record)})
+        patient = decorate({**p, **e, 'id': patient_id, 'suggested_mutations':analysis_input(current_record,e.get('mutations'))})
         review_history = [dict(r) for r in con.execute('SELECT r.*,u.name AS actor FROM episode_revisions r LEFT JOIN users u ON r.actor_id=u.id WHERE patient_id=? ORDER BY r.id DESC LIMIT 50',(patient_id,))]
         from ..services.suggestion_service import suggest
         from ..services.psychosocial_service import recommendations

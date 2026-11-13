@@ -97,3 +97,56 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code,200)
         self.assertEqual(response.json(),result)
         check.assert_called_once()
+
+    def test_mutation_entry_saves_source_and_prefills_without_changing_lab_outcome(self):
+        import json
+        self.login('lab')
+        with self.database.connect() as con:
+            patient=dict(con.execute('SELECT * FROM patients WHERE id=1').fetchone())
+            episode=dict(con.execute('SELECT * FROM episodes WHERE patient_id=1').fetchone())
+            overlays=json.loads(patient['source_overrides_json'] or '{}')
+            overlays['Resistance to 3TC']='Susceptible'
+            con.execute('UPDATE patients SET source_overrides_json=? WHERE id=1',(json.dumps(overlays),))
+            con.execute("UPDATE episodes SET status='Usable result',reviewed_at=NULL,decision=NULL,interpretation_json=?,sequence='ACGT',suggestion_json='{}' WHERE patient_id=1",(json.dumps({'version':{'text':'old'}}),))
+        body={'pi':'M46I, I54V','insti':'E157Q(99.7%)','nrti':'M184V(99.2%)','nnrti':'K103N',
+              'reason':'Entered from laboratory report','expected_version':patient['data_version'],'expected_lab_version':episode['version']}
+        response=self.client.put('/api/lab/1/mutations',json=body)
+        self.assertEqual(response.status_code,200,response.text)
+        detail=self.client.get('/api/patients/1').json()
+        updated=detail['patient']
+        self.assertEqual(detail['current_record']['INSTI'],'E157Q(99.7%)')
+        self.assertEqual(detail['current_record']['Resistance to 3TC'],'')
+        self.assertEqual(set(updated['suggested_mutations'].split()),{'PR:M46I','PR:I54V','IN:E157Q','RT:M184V','RT:K103N'})
+        self.assertIsNone(updated['interpretation'])
+        self.assertEqual(updated['status'],'Usable result')
+        self.assertEqual(updated['sequence'],'')
+        self.assertEqual(updated['report_at'],episode['report_at'])
+        self.assertEqual(self.client.put('/api/lab/1/mutations',json=body).status_code,409)
+        with self.database.connect() as con:
+            con.execute('UPDATE patients SET source_overrides_json=?,data_version=? WHERE id=1',(patient['source_overrides_json'],patient['data_version']))
+            for key in ('status','reviewed_at','decision','interpretation_json','sequence','suggestion_json','mutations','version'):
+                con.execute('UPDATE episodes SET '+key+'=? WHERE patient_id=1',(episode[key],))
+
+    def test_mutation_entry_permissions_and_validation(self):
+        self.login('lab')
+        detail=self.client.get('/api/patients/2').json()['patient']
+        body={'nrti':'RT:patient','reason':'Entered from laboratory report',
+              'expected_version':detail['data_version'],'expected_lab_version':detail['version']}
+        self.login('nurse')
+        self.assertEqual(self.client.put('/api/lab/2/mutations',json=body).status_code,403)
+        self.login('lab')
+        with self.database.connect() as con:
+            before=dict(con.execute('SELECT * FROM episodes WHERE patient_id=2').fetchone())
+            con.execute("UPDATE episodes SET status='Pending',reviewed_at=NULL,decision=NULL WHERE patient_id=2")
+        self.assertEqual(self.client.put('/api/lab/2/mutations',json=body).status_code,400)
+        body['nrti']='M184V'
+        self.assertEqual(self.client.put('/api/lab/2/mutations',json=body).status_code,200)
+        self.assertEqual(self.client.get('/api/patients/2').json()['patient']['status'],'Pending')
+        with self.database.connect() as con:
+            con.execute("UPDATE episodes SET reviewed_at='2026-11-01' WHERE patient_id=2")
+        detail=self.client.get('/api/patients/2').json()['patient']
+        body.update(expected_version=detail['data_version'],expected_lab_version=detail['version'])
+        self.assertEqual(self.client.put('/api/lab/2/mutations',json=body).status_code,409)
+        with self.database.connect() as con:
+            for key in ('status','reviewed_at','decision'):
+                con.execute('UPDATE episodes SET '+key+'=? WHERE patient_id=2',(before[key],))

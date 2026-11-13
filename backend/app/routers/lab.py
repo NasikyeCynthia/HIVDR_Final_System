@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from ..core.dependencies import current_user
-from ..schemas.lab import CollectionRecord, DispatchRecord, ReceiptRecord, ResultRecord, RepeatRequest
+from ..schemas.lab import CollectionRecord, DispatchRecord, ReceiptRecord, ResultRecord, RepeatRequest, MutationRecord
 from ..services.workflow_service import change_patient
 from ..services import lab_service as lab
 
@@ -32,6 +32,11 @@ def receipt(patient_id: int, data: ReceiptRecord, user=Depends(current_user)):
 @router.put('/{patient_id}/result')
 def result(patient_id: int, data: ResultRecord, user=Depends(current_user)):
     return change_patient(patient_id, user, data.model_dump(), lab.record_result)
+
+
+@router.put('/{patient_id}/mutations')
+def mutations(patient_id: int, data: MutationRecord, user=Depends(current_user)):
+    return change_patient(patient_id,user,data.model_dump(),lab.record_mutations)
 
 
 @router.post('/{patient_id}/repeat-request')

@@ -213,6 +213,36 @@ def _overlay(con, pid, changes):
     overlay_changes(con, pid, changes)
 
 
+def record_mutations(con,user,p,e,data):
+    """Save genotype evidence separately from sample dates and laboratory outcome."""
+    _guard(user,e)
+    if p['data_version']!=data['expected_version'] or e['version']!=data['expected_lab_version']:
+        raise DomainError('The laboratory record changed. Reload before saving mutations.',409)
+    if e.get('status') in ('Unamplified','Sequencing failed','Rejected','Deferred'):
+        raise DomainError('Correct the unsuccessful laboratory outcome before adding a mutation result.',409)
+    reason=str(data['reason']).strip()
+    if len(reason)<10:raise ValueError('Explain the mutation entry or correction (at least 10 characters).')
+    from .mutation_inputs import GROUPS,validate_group_input
+    tokens=[];changes={}
+    for group,(gene,columns) in GROUPS.items():
+        value=str(data.get(group.lower()) or '').strip()
+        parsed=validate_group_input(value,gene)
+        for token in parsed:
+            if token not in tokens:tokens.append(token)
+        # Save source notation (including frequencies); clear obsolete alternate fields for this group.
+        for column in columns:changes[column]=value if column==group else ''
+    if not tokens:raise ValueError('Enter at least one reported mutation. For a mutation-free report use the laboratory sequence.')
+    _snapshot(con,user,p['id'],e)
+    changes['All Mutations Combined']=' '.join(tokens)
+    # Older report classifications must not masquerade as interpretations of revised mutations.
+    from .record_service import effective_record
+    changes.update({key:'' for key in effective_record(p) if key.startswith('Resistance to ')})
+    _overlay(con,p['id'],changes)
+    con.execute("UPDATE episodes SET mutations=?,sequence='',interpretation_json=NULL,interpreted_at=NULL,suggestion_json=NULL,version=version+1 WHERE patient_id=?",(' '.join(tokens),p['id']))
+    audit(con,user,'laboratory mutations saved',p['id'],{'mutations':e.get('mutations')},
+          {'fields':{key:changes[key] for key in GROUPS},'reason':reason})
+
+
 def record_collection(con, user, p, e, data):
     _guard(user, e)
     pid = p['id']
@@ -416,6 +446,11 @@ def record_result(con, user, p, e, data):
             changes[column] = ', '.join(groups[key])
     if groups['pi_major'] or groups['pi_minor']:
         changes['PI Mutations Combined'] = ', '.join(groups['pi_major'] + groups['pi_minor'])
+    # Keep the original dataset group columns in sync with a newly entered lab report.
+    class_values={'PI':groups['pi_major']+groups['pi_minor'],'INSTI':groups['insti'],
+                  'NRTI':groups['nrti'],'NNRTI':groups['nnrti']}
+    for column,values in class_values.items():
+        if values or correcting:changes[column]=', '.join(values)
     for drug, level in levels.items():
         if level:
             changes['Resistance to ' + drug] = level

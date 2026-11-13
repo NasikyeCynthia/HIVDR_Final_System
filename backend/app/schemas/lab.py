@@ -62,3 +62,13 @@ class ResultRecord(StrictModel):
 
 class RepeatRequest(StrictModel):
     note: str = Field(default='', max_length=3000)
+
+
+class MutationRecord(StrictModel):
+    pi: str = Field(default='',max_length=5000)
+    insti: str = Field(default='',max_length=5000)
+    nrti: str = Field(default='',max_length=5000)
+    nnrti: str = Field(default='',max_length=5000)
+    expected_version: int = Field(ge=0)
+    expected_lab_version: int = Field(ge=0)
+    reason: str = Field(min_length=10,max_length=3000)
