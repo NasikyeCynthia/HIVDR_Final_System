@@ -44,9 +44,9 @@ def sections(p,user):
     raw.setdefault('Adherence (%)','' if p.get('adherence') is None else str(p['adherence']))
     raw.setdefault('Lab failure reason',p.get('failure_reason') or '')
     raw.setdefault('DBS justification',p.get('dbs_reason') or '')
-    for key in dict.fromkeys(COLUMNS+['Adherence (%)','Lab failure reason','DBS justification']+list(raw)):
+    for index,key in enumerate(dict.fromkeys(COLUMNS+['Adherence (%)','Lab failure reason','DBS justification']+list(raw))):
         if user['role']=='nurse' and hidden_from_nurse(key):continue
-        result.setdefault(section(key),[]).append({'key':key,'value':raw.get(key,''),'editable':may_edit(user,p,key)})
+        result.setdefault(section(key),[]).append({'key':key,'value':raw.get(key,''),'editable':may_edit(user,p,key),'order':index})
     return result
 
 def sync_core(con,pid,raw):

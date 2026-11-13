@@ -15,24 +15,6 @@ import DecisionChart from '../components/dashboard/DecisionChart.jsx';
 import ProfileCompleteness from '../components/dashboard/ProfileCompleteness.jsx';
 import LaboratoryOverview from '../components/dashboard/LaboratoryOverview.jsx';
 
-function SharedDatasetSelector() {
-  const { source, setSource, datasetSaving, canManageDataset } = useWorkspace();
-  return <Card title="Dataset used across all roles" subtitle="The selected dataset stays active for everyone until an administrator changes it." className="section-gap">
-    <div className="form-grid">
-      <div>
-        <label htmlFor="dashboard-dataset">Shared dataset</label>
-        <select id="dashboard-dataset" value={source} disabled={!canManageDataset || datasetSaving} onChange={event => setSource(event.target.value).catch(() => {})}>
-          <option value="original">Original data</option>
-          <option value="synthetic">Synthetic demo</option>
-        </select>
-      </div>
-      <p className="tiny muted">{canManageDataset
-        ? 'Changing this setting updates the dataset for every role. Facility selection controls which records are in view.'
-        : 'This is the dataset selected by your administrator. You can change the facility in the toolbar above.'}</p>
-    </div>
-  </Card>;
-}
-
 export default function DashboardPage() {
   const { visiblePatients: patients, users } = useWorkspace();
   const preDiscussion = patients.filter(patient => patient.amplified === 1 && patient.discussion_status === 'Pending');
@@ -44,14 +26,13 @@ export default function DashboardPage() {
 
   return <>
     <PageHeader title="Surveillance overview" description="From patient identification to implemented care — every step in view." />
-    <SharedDatasetSelector />
     <div className="stats">
-      <StatisticsCard tone="blue" title="Patient records" value={patients.length} description="Within selected source and facility" icon="♙" />
-      <StatisticsCard tone="crimson" title="Flagged high risk" value={patients.filter(p => p.risk?.flagged).length} description="High risk of drug resistance" icon="◆" filter="flagged" />
-      <StatisticsCard tone="teal" title="Usable laboratory results" value={usable.length} description="Results available for review" icon="⌕" filter="usable" />
-      <StatisticsCard tone="amber" title="Awaiting clinical review" value={awaitingReview.length} description="Usable results awaiting action" icon="☷" filter="awaiting-review" />
-      <StatisticsCard tone="violet" title="Profiles incomplete before discussion" value={preIncomplete.length} description="Patient details to complete" icon="◇" filter="missing-pre" />
-      <StatisticsCard tone="rose" title="Profiles incomplete after discussion" value={postIncomplete.length} description="Committee follow-up to complete" icon="◇" filter="missing-post" />
+      <StatisticsCard tone="blue" title="Patient records" value={patients.length} description="Within selected source and facility" icon="patients" />
+      <StatisticsCard tone="crimson" title="Flagged high risk" value={patients.filter(p => p.risk?.flagged).length} description="High risk of drug resistance" icon="risk" filter="flagged" />
+      <StatisticsCard tone="teal" title="Usable laboratory results" value={usable.length} description="Results available for review" icon="lab" filter="usable" />
+      <StatisticsCard tone="amber" title="Awaiting clinical review" value={awaitingReview.length} description="Usable results awaiting action" icon="discussion" filter="awaiting-review" />
+      <StatisticsCard tone="violet" title="Profiles incomplete before discussion" value={preIncomplete.length} description="Patient details to complete" icon="patients" filter="missing-pre" />
+      <StatisticsCard tone="rose" title="Profiles incomplete after discussion" value={postIncomplete.length} description="Committee follow-up to complete" icon="patients" filter="missing-post" />
     </div>
     <div className="grid-two"><ProcessCascade patients={patients} /><ClinicalCascade patients={patients} /></div>
     <div className="section-gap"><TreatmentLineFailure patients={patients} /></div>

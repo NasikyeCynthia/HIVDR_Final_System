@@ -36,6 +36,14 @@ def approve_decision(con, user, p, e, data):
         raise ValueError('A usable laboratory result is required')
     if e['decision']:
         raise ValueError('A decision is already approved for this episode; use the amendment workflow to change it.')
+    if data.get('expected_version') is not None and data['expected_version']!=e['version']:
+        raise DomainError('Laboratory evidence changed. Reload and review the latest Stanford result before approving.',409)
+    if data.get('expected_data_version') is not None and data['expected_data_version']!=p['data_version']:
+        raise DomainError('Patient context changed. Reload and review before approving.',409)
+    if not e.get('interpretation_json'):
+        raise DomainError('Stanford interpretation is not ready. Resolve or retry the analysis before approving.',409)
+    if data.get('expected_version') is None or data.get('expected_data_version') is None or not data.get('evidence_reviewed'):
+        raise DomainError('Review and acknowledge the latest Stanford evidence and patient context before approval.',409)
     from .suggestion_service import suggest
     suggestion = suggest(p, e, _raw(p))
     followed = bool(suggestion and suggestion.get('action') == data['decision'])
@@ -43,7 +51,7 @@ def approve_decision(con, user, p, e, data):
         raise ValueError('The decision differs from the suggested action: explain the clinical reasoning (at least 20 characters).')
     stamp = now()
     con.execute("""UPDATE episodes SET reviewed_at=COALESCE(reviewed_at,?),reviewer=?,decision=?,discussion_status='Done',decision_at=?,
-                   decision_notes=?,recommended_regimen=?,suggestion_json=? WHERE patient_id=?""",
+                   decision_notes=?,recommended_regimen=?,suggestion_json=?,version=version+1 WHERE patient_id=?""",
                 (stamp, user['id'], data['decision'], stamp, data['decision_notes'], data['recommended_regimen'],
                  json.dumps({**(suggestion or {}), 'followed': followed}), pid))
     audit(con, user, 'clinical decision approved', pid, e, {**data, 'suggested': (suggestion or {}).get('action'), 'followed': followed})

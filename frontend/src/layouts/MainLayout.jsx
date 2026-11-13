@@ -3,6 +3,9 @@ import Sidebar from '../components/layout/Sidebar.jsx';
 import Topbar from '../components/layout/Topbar.jsx';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import {NotificationsProvider} from '../contexts/NotificationsContext.jsx';
+import usePreferences from '../hooks/usePreferences.js';
+import Icon from '../components/common/Icon.jsx';
 
 export default function MainLayout() {
   const {
@@ -10,8 +13,9 @@ export default function MainLayout() {
   } = useWorkspace();
   const facilityValue = facility === 'all' || facilities.includes(facility) ? facility : '';
   const { user } = useAuth();
+  const {preferences}=usePreferences(user.id);
 
-  return <div className="shell">
+  return <NotificationsProvider><div className={`shell ${preferences.density==='compact'?'density-compact':''}`}>
     <Sidebar />
     <main className="main">
       <Topbar />
@@ -26,18 +30,17 @@ export default function MainLayout() {
               : <option value="">No facilities in this dataset for your account</option>}
           </select>
           <button className="text-link" disabled={loading} onClick={() => refresh().catch(() => {})}>
-            {loading ? 'Refreshing…' : '↻ Refresh'}
+            <Icon name="refresh" size={16}/>{loading ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
-        {canAccessAll && <p className="tiny muted">{user.edit_any_facility ? 'All facilities: view any facility or select one; you can make the changes your role allows for any patient.' : `You can view all facilities. Changes are limited to your role at your own facility (${user.facility}).`}</p>}
         {!canAccessAll && !facilities.length && <p className="notice info">
           Your assigned facility has no records in the selected dataset. Ask an administrator to assign your account to a facility with records.
           Viewing access does not grant permission to edit or approve at other facilities.
         </p>}
         {error && <p role="alert" className="notice error">{error}</p>}
-        {loading && <p role="status" className="notice info"><b>Loading patient records…</b> With the full dataset this can take up to a minute; the counts below fill in when it finishes.</p>}
+        {loading && <p role="status" className="notice info">Refreshing patient records…</p>}
         <Outlet />
       </div>
     </main>
-  </div>;
+  </div></NotificationsProvider>;
 }

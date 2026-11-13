@@ -54,6 +54,7 @@ class ResultRecord(StrictModel):
     nrti: str = Field(default='', max_length=3000)
     nnrti: str = Field(default='', max_length=3000)
     pi_major: str = Field(default='', max_length=3000)
+    pi: str = Field(default='', max_length=3000)
     pi_minor: str = Field(default='', max_length=3000)
     insti: str = Field(default='', max_length=3000)
     other: str = Field(default='', max_length=3000)

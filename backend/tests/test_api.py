@@ -8,8 +8,12 @@ HAS_HTTP_TEST_DEPS = all(importlib.util.find_spec(module) for module in ('fastap
 
 @unittest.skipUnless(HAS_HTTP_TEST_DEPS, 'Install backend/requirements-dev.txt for FastAPI HTTP integration tests')
 class ApiTests(unittest.TestCase):
+    def setUp(self):
+        with self.database.connect() as con:con.execute('DELETE FROM interpretation_jobs')
     @classmethod
     def setUpClass(cls):
+        from unittest.mock import patch
+        cls.worker=patch('app.services.auto_interpretation.schedule');cls.worker.start();cls.addClassCleanup(cls.worker.stop)
         from app.routers.auth import attempts
         attempts.clear()
         from fastapi.testclient import TestClient
@@ -61,6 +65,49 @@ class ApiTests(unittest.TestCase):
         result = self.client.post('/api/auth/login', json={'username': 'admin', 'password': self.password}, headers={'Origin': 'https://untrusted.example'})
         self.assertEqual(result.status_code, 403)
 
+    def test_complete_dataset_columns_and_record_fields_preserve_source_order(self):
+        from app.services.record_service import COLUMNS
+        self.login('lab')
+        self.assertEqual(self.client.get('/api/patients/columns').json()['columns'],COLUMNS)
+        detail=self.client.get('/api/patients/1').json()
+        fields=[field for section in detail['record_sections'].values() for field in section]
+        ordered=sorted(fields,key=lambda field:field['order'])
+        self.assertEqual([field['key'] for field in ordered[:len(COLUMNS)]],COLUMNS)
+        response=self.client.get('/api/patients/table',params=[('ids',1)]+[('fields',field) for field in COLUMNS])
+        self.assertEqual(response.status_code,200,response.text)
+        self.assertEqual(list(response.json()[0]['fields']),COLUMNS)
+
+    def test_result_correction_accepts_original_pi_column_and_frequencies(self):
+        import json
+        self.login('lab')
+        with self.database.connect() as con:
+            patient=dict(con.execute('SELECT * FROM patients WHERE id=1').fetchone())
+            episode=dict(con.execute('SELECT * FROM episodes WHERE patient_id=1').fetchone())
+            raw=json.loads(patient['source_overrides_json'] or '{}')
+            raw['Resistance to EFV']='Susceptible'
+            con.execute('UPDATE patients SET source_overrides_json=? WHERE id=1',(json.dumps(raw),))
+            con.execute("UPDATE episodes SET status='Usable result',reviewed_at=NULL,decision=NULL,received_at='2026-10-01',suggestion_json='{}' WHERE patient_id=1")
+        try:
+            body={'outcome':'Usable result','tested_at':'2026-10-20','released_at':'2026-10-21',
+                  'correction_reason':'Correct genotype transcription','pi':'M46I(99.9%)','insti':'R263K(100.0%)',
+                  'nrti':'M184V','nnrti':'K103N','drug_levels':{'3TC':'High-Level Resistance','EFV':''}}
+            response=self.client.put('/api/lab/1/result',json=body)
+            self.assertEqual(response.status_code,200,response.text)
+            detail=self.client.get('/api/patients/1').json()
+            self.assertEqual(detail['current_record']['PI'],'M46I(99.9%)')
+            self.assertEqual(detail['current_record']['INSTI'],'R263K(100.0%)')
+            self.assertEqual(set(detail['patient']['suggested_mutations'].split()),{'PR:M46I','IN:R263K','RT:M184V','RT:K103N'})
+            self.assertEqual(detail['current_record']['Resistance to EFV'],'')
+            self.assertEqual(detail['current_record']['Resistance to 3TC'],'High-Level Resistance')
+            self.assertIsNone(detail['patient']['interpretation'])
+            with self.database.connect() as con:
+                self.assertIsNone(con.execute('SELECT suggestion_json FROM episodes WHERE patient_id=1').fetchone()[0])
+        finally:
+            with self.database.connect() as con:
+                con.execute('UPDATE patients SET source_overrides_json=?,data_version=? WHERE id=1',(patient['source_overrides_json'],patient['data_version']))
+                keys=['status','reviewed_at','decision','received_at','suggestion_json','mutations','sequence','subtype','interpretation_json','interpreted_at','report_at','tested_at','amplified','failure_reason','discussion_status','repeat_requested_at','version']
+                con.execute('UPDATE episodes SET '+','.join(key+'=?' for key in keys)+' WHERE patient_id=1',[episode[key] for key in keys])
+
     def test_resistance_table_keeps_exposure_and_api_results_separate(self):
         import json
         self.login('lab')
@@ -97,6 +144,49 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code,200)
         self.assertEqual(response.json(),result)
         check.assert_called_once()
+
+    def test_saved_result_retry_is_available_to_clinician_without_editing_genotype(self):
+        from unittest.mock import patch
+        with self.database.connect() as con:
+            before=dict(con.execute('SELECT * FROM episodes WHERE patient_id=1').fetchone())
+            con.execute("UPDATE episodes SET status='Usable result',decision=NULL,mutations='RT:M184V IN:E157Q' WHERE patient_id=1")
+        try:
+            self.login('nurse')
+            self.assertEqual(self.client.post('/api/workflow/patients/1/retry-interpretation').status_code,403)
+            self.login('clinician')
+            with patch('app.services.auto_interpretation.schedule') as schedule:
+                response=self.client.post('/api/workflow/patients/1/retry-interpretation')
+            self.assertEqual(response.status_code,200,response.text)
+            schedule.assert_called_once_with(1)
+            with self.database.connect() as con:
+                self.assertEqual(con.execute('SELECT status FROM interpretation_jobs').fetchone()[0],'pending')
+                self.assertEqual(con.execute('SELECT mutations FROM episodes WHERE patient_id=1').fetchone()[0],'RT:M184V IN:E157Q')
+        finally:
+            with self.database.connect() as con:
+                con.execute('UPDATE episodes SET status=?,decision=?,mutations=?,interpretation_json=? WHERE patient_id=1',
+                            (before['status'],before['decision'],before['mutations'],before.get('interpretation_json')))
+
+    def test_notification_read_state_is_persistent_and_scoped_to_account(self):
+        self.login('lab')
+        response=self.client.get('/api/notifications/inbox?source=synthetic')
+        self.assertEqual(response.status_code,200,response.text)
+        inbox=response.json();self.assertTrue(inbox['items'])
+        self.assertGreaterEqual(inbox['total'],inbox['unread_count'])
+        unread_inbox=self.client.get('/api/notifications/inbox?source=synthetic&status=unread').json()
+        self.assertEqual(unread_inbox['total'],unread_inbox['unread_count'])
+        key=inbox['items'][0]['id']
+        self.assertEqual(self.client.patch('/api/notifications/read',json={'ids':[key],'read':True}).status_code,200)
+        again=self.client.get('/api/notifications/inbox?source=synthetic').json()
+        self.assertTrue(next(i for i in again['items'] if i['id']==key)['read'])
+        self.assertEqual(again['unread_count'],inbox['unread_count']-1)
+        with self.database.connect() as con:
+            lab_id=con.execute("SELECT id FROM users WHERE username='lab'").fetchone()[0]
+            other=con.execute("SELECT id FROM users WHERE username='clinician'").fetchone()[0]
+            self.assertEqual(con.execute('SELECT count(*) FROM notification_reads WHERE user_id=? AND notification_key=?',(lab_id,key)).fetchone()[0],1)
+            self.assertEqual(con.execute('SELECT count(*) FROM notification_reads WHERE user_id=? AND notification_key=?',(other,key)).fetchone()[0],0)
+        self.assertEqual(self.client.patch('/api/notifications/read',json={'ids':[key],'read':False}).status_code,200)
+        self.assertFalse(next(i for i in self.client.get('/api/notifications/inbox?source=synthetic').json()['items'] if i['id']==key)['read'])
+        self.assertEqual(self.client.patch('/api/notifications/read',json={'ids':['invalid']} ).status_code,400)
 
     def test_mutation_entry_saves_source_and_prefills_without_changing_lab_outcome(self):
         import json

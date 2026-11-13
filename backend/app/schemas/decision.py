@@ -5,6 +5,9 @@ class DecisionRequest(StrictModel):
     decision: Literal['Maintained', 'Substituted', 'Switched']
     decision_notes: str = Field(min_length=1, max_length=5000)
     recommended_regimen: str = Field(min_length=1, max_length=300)
+    expected_version: int | None = Field(default=None,ge=0)
+    expected_data_version: int | None = Field(default=None,ge=0)
+    evidence_reviewed: bool = False
 
 class ImplementationRequest(StrictModel):
     implementation_notes: str = Field(min_length=1, max_length=5000)

@@ -198,7 +198,7 @@ def _correction(data):
 DRUGS = ('BIC', 'CAB', 'DTG', 'RAL', 'ATV/r', 'DRV/r', 'LPV/r', '3TC', 'ABC', 'AZT', 'TDF', 'DOR', 'EFV', 'ETR', 'NVP')
 LEVELS = ('Susceptible', 'Potential Low-Level Resistance', 'Low-Level Resistance', 'Intermediate Resistance', 'High-Level Resistance')
 # Mutation fields as in the CPHL report: (form key, CPHL column, Stanford gene prefix)
-GENE_FIELDS = (('nrti', 'NRTI Mutations', 'RT'), ('nnrti', 'NNRTI Mutations', 'RT'), ('pi_major', 'PiMajor Mutations', 'PR'),
+GENE_FIELDS = (('nrti', 'NRTI Mutations', 'RT'), ('nnrti', 'NNRTI Mutations', 'RT'), ('pi','PI','PR'), ('pi_major', 'PiMajor Mutations', 'PR'),
                ('pi_minor', 'PiMinor Mutations', 'PR'), ('insti', 'INSTI Mutations', 'IN'), ('other', 'Other Mutations', None))
 TOKEN = re.compile(r'[A-Z]?\d+[A-Za-z*_/-]+', re.I)
 
@@ -408,7 +408,11 @@ def record_result(con, user, p, e, data):
     # Mutations may be entered per gene/drug class (as on the CPHL report) and/or as one gene-prefixed list.
     groups = {}
     for key, column, gene in GENE_FIELDS:
-        tokens = str(data.get(key) or '').replace(';', ',').replace(',', ' ').split()
+        if gene:
+            from .mutation_inputs import validate_group_input
+            tokens=[token.split(':',1)[1] for token in validate_group_input(data.get(key),gene)]
+        else:
+            tokens = str(data.get(key) or '').replace(';', ',').replace(',', ' ').split()
         bad = [t for t in tokens if not TOKEN.fullmatch(t)]
         if bad:
             raise ValueError(f'{column}: not recognised as mutations — ' + ', '.join(bad[:5]) + ' (write e.g. M184V K65R)')
@@ -435,7 +439,7 @@ def record_result(con, user, p, e, data):
     _snapshot(con, user, pid, e)
     discussion = classify_discussion(None, e.get('decision'), amplified if outcome == 'Usable result' else None)
     con.execute('''UPDATE episodes SET tested_at=?,report_at=?,status=?,amplified=?,failure_reason=?,mutations=?,sequence=?,subtype=?,discussion_status=?,
-                   interpretation_json=NULL,interpreted_at=NULL,repeat_requested_at=NULL,version=version+1 WHERE patient_id=?''',
+                   interpretation_json=NULL,interpreted_at=NULL,suggestion_json=NULL,repeat_requested_at=NULL,version=version+1 WHERE patient_id=?''',
                 (tested, released, outcome, amplified, failure if outcome != 'Usable result' else '', mutations, sequence,
                  str(data.get('subtype') or '').strip(), discussion, pid))
     changes = {'dateTestedForDR': tested[:10], 'DR_results_releaseDate': released[:10],
@@ -444,13 +448,18 @@ def record_result(con, user, p, e, data):
     for key, column, gene in GENE_FIELDS:
         if groups[key] or correcting:
             changes[column] = ', '.join(groups[key])
-    if groups['pi_major'] or groups['pi_minor']:
-        changes['PI Mutations Combined'] = ', '.join(groups['pi_major'] + groups['pi_minor'])
+    if groups['pi'] or groups['pi_major'] or groups['pi_minor'] or correcting:
+        changes['PI Mutations Combined'] = ', '.join(groups['pi'] + groups['pi_major'] + groups['pi_minor'])
     # Keep the original dataset group columns in sync with a newly entered lab report.
-    class_values={'PI':groups['pi_major']+groups['pi_minor'],'INSTI':groups['insti'],
+    class_values={'PI':groups['pi']+groups['pi_major']+groups['pi_minor'],'INSTI':groups['insti'],
                   'NRTI':groups['nrti'],'NNRTI':groups['nnrti']}
     for column,values in class_values.items():
-        if values or correcting:changes[column]=', '.join(values)
+        if values or correcting:
+            source_keys={'PI':['pi','pi_major','pi_minor'],'INSTI':['insti'],'NRTI':['nrti'],'NNRTI':['nnrti']}[column]
+            changes[column]=', '.join(str(data.get(key) or '').strip() for key in source_keys if str(data.get(key) or '').strip())
+    if correcting:
+        from .record_service import effective_record
+        changes.update({key:'' for key in effective_record(p) if key.startswith('Resistance to ')})
     for drug, level in levels.items():
         if level:
             changes['Resistance to ' + drug] = level

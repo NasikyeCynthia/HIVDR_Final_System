@@ -12,6 +12,7 @@ from app.core.errors import DomainError
 
 class WorkflowTests(unittest.TestCase):
     def setUp(self):
+        worker=patch('app.services.auto_interpretation.schedule');worker.start();self.addCleanup(worker.stop)
         from app.routers.auth import attempts
         attempts.clear()
         self.temp=tempfile.TemporaryDirectory()

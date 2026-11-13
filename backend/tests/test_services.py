@@ -17,6 +17,8 @@ from app.services.workflow_service import load_patient, change_patient
 
 class ServiceTests(unittest.TestCase):
     def setUp(self):
+        from unittest.mock import patch
+        worker=patch('app.services.auto_interpretation.schedule');worker.start();self.addCleanup(worker.stop)
         self.temp=tempfile.TemporaryDirectory()
         self.old=(bootstrap.ROOT,bootstrap.DB,database.DB)
         bootstrap.ROOT=Path(self.temp.name)
@@ -80,6 +82,13 @@ class ServiceTests(unittest.TestCase):
             change_patient(pid,self.users['clinician'],decision,approve_decision)
         with database.connect() as con:
             con.execute('UPDATE patients SET psychosocial_json=? WHERE id=1',(json.dumps({'assessed':True,'factors':[]}),))
+        from unittest.mock import patch
+        from app.services.auto_interpretation import process_pending
+        result={'provider':'Stanford HIVdb Sierra','version':{'text':'fixture'},'analysis':{'drugResistance':[{'gene':{'name':'RT'},'drugScores':[{'drug':{'displayAbbr':d},'level':1,'score':0,'text':'Susceptible'} for d in ('TDF','3TC','DTG')]}]}}
+        with patch('app.services.stanford_service.analyze',return_value=result):process_pending(pid)
+        with database.connect() as con:
+            p,e=load_patient(con,self.users['clinician'],pid)
+        decision.update(expected_version=e['version'],expected_data_version=p['data_version'],evidence_reviewed=True)
         change_patient(pid,self.users['clinician'],decision,approve_decision)
         change_patient(pid,self.users['nurse'],{'implementation_notes':'Implementation confirmed'},implement_decision)
         with database.connect() as con:

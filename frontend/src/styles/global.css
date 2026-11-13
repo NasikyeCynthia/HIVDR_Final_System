@@ -126,3 +126,12 @@ body{min-height:100vh;overflow-y:auto}
 .resistance-patient-table thead tr:first-child th:last-child{background:#edf4f6;z-index:2}
 
 .mutation-cell{min-width:230px!important;max-width:360px;white-space:normal;overflow-wrap:anywhere}.mutation-entry{scroll-margin-top:20px}
+.complete-dataset-table th,.complete-dataset-table td{min-width:150px;vertical-align:top}
+.complete-dataset-table th:first-child,.complete-dataset-table td:first-child{position:sticky;left:0;z-index:1;background:#fff;min-width:110px;box-shadow:2px 0 3px #0001}
+.complete-dataset-table th:last-child,.complete-dataset-table td:last-child{position:sticky;right:0;z-index:1;background:#fff;min-width:130px;box-shadow:-2px 0 3px #0001}
+.lab-action-panel,.lab-result-form,#lab-mutations{scroll-margin-top:20px}
+.icon-button{position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px}.icon-button:hover{background:var(--primary-soft)}
+.icon,.btn,.text-link{align-items:center;gap:7px}.nav-item .icon{display:inline-flex}.btn{display:inline-flex;justify-content:center}.notification-count{position:absolute;right:-4px;top:-2px;min-width:17px;padding:1px 4px;border-radius:10px;background:var(--primary);color:white;font-size:10px;text-align:center}
+.inbox-item{display:flex;gap:16px;padding:22px;border-bottom:1px solid var(--line)}.inbox-item.unread{background:#fcf5f7}.inbox-icon{color:var(--primary);padding-top:3px}.inbox-content{flex:1;min-width:0}.inbox-heading{display:flex;align-items:center;gap:10px}.inbox-heading h2{font-size:14px;margin:0}.inbox-content p{font-size:13px;margin:8px 0;color:#4b626d}.inbox-actions{display:flex;gap:22px;margin-top:12px}.unread-dot{width:7px;height:7px;border-radius:50%;background:var(--primary)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;border-bottom:1px solid var(--line)}.settings-row select{width:180px}.settings-row input[type=checkbox]{width:18px;height:18px}.help-topics{display:grid;gap:18px;margin:24px 0}.help-topics section{scroll-margin-top:20px}.help-topics p{line-height:1.8;margin:0}.density-compact td,.density-compact th{padding-top:9px;padding-bottom:9px}.density-compact .card-body{padding-top:16px;padding-bottom:16px}
+.notification-filters .segment.active{background:var(--primary);border-color:var(--primary)}

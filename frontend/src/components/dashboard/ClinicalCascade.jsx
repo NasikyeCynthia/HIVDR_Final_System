@@ -13,7 +13,6 @@ export default function ClinicalCascade({ patients }) {
   return <Card className="accent-clinical" title="Clinical cascade" subtitle={`${n.toLocaleString()} committee decisions`}>
     <div className="cascade">{rows.map(([label, count, filter, color]) => <Link key={label} className="bar-col" to={`/patients?filter=${filter}`} aria-label={`${label}: ${count} patients`}><span className="bar-value">{count}</span><span className="bar-percent">{n ? Math.round(count / n * 100) : 0}%</span><span className="bar" style={{ height: `${Math.max(1, n ? count / n * 155 : 1)}px`, background: color }} /></Link>)}</div>
     <div className="bar-labels">{rows.map(([label]) => <span key={label}>{label}</span>)}</div>
-    <p className="tiny muted">Percentages are of all committee decisions. Implemented = the nurse/counsellor has recorded that the decision was carried out.</p>
     <Link className="text-link" to="/patients?filter=awaiting-implementation">{decided.filter(p => !p.implemented_at).length} decisions await implementation →</Link>
   </Card>;
 }

@@ -12,6 +12,7 @@ import ResistanceClassificationPage from './pages/ResistanceClassificationPage.j
 import DiscussionPage from './pages/DiscussionPage.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import HelpPage from './pages/HelpPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 // Every role can open every page; what each role can change is enforced per action.
@@ -33,6 +34,7 @@ export default function App() {
     <Route path="/discussion" element={<NurseRestricted><DiscussionPage /></NurseRestricted>} />
     <Route path="/notifications" element={<NotificationsPage />} />
     <Route path="/settings" element={<SettingsPage />} />
+    <Route path="/help" element={<HelpPage />} />
     <Route path="*" element={<NotFoundPage />} />
   </Route></Routes></WorkspaceProvider>;
 }

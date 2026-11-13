@@ -10,6 +10,7 @@ def load_patient(con, user, patient_id):
     return dict(row), dict(episode)
 
 def change_patient(patient_id, user, data, operation):
+    queued=None
     with connect() as con:
         patient, episode = load_patient(con, user, patient_id)
         from ..core.permissions import any_facility
@@ -19,4 +20,14 @@ def change_patient(patient_id, user, data, operation):
         operation(con, user, patient, episode, data)
         from .eligibility_service import refresh
         refresh(con, patient_id)
+        lab_change=operation.__name__ in ('record_result','record_mutations')
+        if operation.__name__=='update_fields':
+            from .record_service import section
+            lab_change=any(section(key)=='Laboratory' for key in data.get('fields',{}))
+        if lab_change:
+            from .auto_interpretation import enqueue
+            queued=enqueue(con,user,patient_id)
+    if queued:
+        from .auto_interpretation import schedule
+        schedule(patient_id)
     return {'ok': True}

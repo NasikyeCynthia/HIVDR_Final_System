@@ -97,10 +97,19 @@ def get_patient(patient_id: int, user=Depends(current_user)):
         original = json.loads(p['original_json'])
         current_record = effective_record(p)
         patient = decorate({**p, **e, 'id': patient_id, 'suggested_mutations':analysis_input(current_record,e.get('mutations'))})
+        from ..services.auto_interpretation import state
+        patient['automation']=state(con,e)
+        if not e.get('decision') and not e.get('interpretation_json'):
+            patient['approval_blockers'].append('A saved Stanford interpretation is required before approval.')
+        if e.get('reviewer'):
+            reviewer=con.execute('SELECT name FROM users WHERE id=?',(e['reviewer'],)).fetchone()
+            patient['reviewer_name']=reviewer['name'] if reviewer else None
         review_history = [dict(r) for r in con.execute('SELECT r.*,u.name AS actor FROM episode_revisions r LEFT JOIN users u ON r.actor_id=u.id WHERE patient_id=? ORDER BY r.id DESC LIMIT 50',(patient_id,))]
         from ..services.suggestion_service import suggest
         from ..services.psychosocial_service import recommendations
-        if not patient.get('suggestion'): patient['suggestion'] = suggest(p, e, current_record)
+        if not e.get('decision'):
+            patient['suggestion']=suggest(p,e,current_record) if e.get('interpretation_json') else None
+        # Approved historical records keep their saved draft, if any; never invent one retrospectively.
         patient['psychosocial_recommendations'] = recommendations(patient.get('psychosocial'), patient.get('age'))
         follow_ups = [dict(r) for r in con.execute('SELECT f.*,u.name AS actor FROM follow_ups f LEFT JOIN users u ON f.actor_id=u.id WHERE patient_id=? ORDER BY due_date',(patient_id,))]
         iac_sessions = [dict(r) for r in con.execute('SELECT s.*,u.name AS actor FROM iac_sessions s LEFT JOIN users u ON s.actor_id=u.id WHERE patient_id=? ORDER BY s.session_date,s.id',(patient_id,))]

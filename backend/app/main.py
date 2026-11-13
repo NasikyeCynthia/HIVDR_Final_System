@@ -11,6 +11,8 @@ from .routers import auth, patients, risk, lab, decisions, discussions, settings
 @asynccontextmanager
 async def lifespan(app):
     initialize()
+    from .services.auto_interpretation import resume_pending
+    resume_pending()
     yield
 
 app = FastAPI(title='HIVDR Surveillance API', version='0.4.0', lifespan=lifespan)

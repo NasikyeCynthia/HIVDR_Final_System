@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth, useCan } from '../../contexts/AuthContext.jsx';
 import ViewOnly from '../common/ViewOnly.jsx';
 import { labService } from '../../services/labService.js';
 import { riskService } from '../../services/riskService.js';
-import { Link } from 'react-router-dom';
+import { Link,useLocation } from 'react-router-dom';
+import {MUTATION_GROUPS,mutationValue} from '../../utils/resistance.js';
 import usePatientAction from '../../hooks/usePatientAction.js';
 import Card from '../common/Card.jsx';
 import Badge from '../common/Badge.jsx';
@@ -21,29 +22,38 @@ const when = v => v ? new Date(v).toLocaleString('en-GB', { day: '2-digit', mont
 const day = v => v ? new Date(v).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const nowLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 const local = v => v ? String(v).slice(0, 16) : '';
+const sourceDate = value => {const v=String(value||'');const m=v.match(/^(\d{2})\/(\d{2})\/(\d{4})/);return m?`${m[3]}-${m[2]}-${m[1]}`:v.slice(0,10);};
 const dateOnly = v => v ? String(v).slice(0, 10) : '';
 const numbers = (data, keys) => { for (const k of keys) data[k] = data[k] === '' || data[k] == null ? null : Number(data[k]); return data; };
 
 function Field({ label, children, full }) { return <div className={`field ${full ? 'full' : ''}`}><label>{label}{children}</label></div>; }
 
-export default function LaboratoryForm({ patient, onSaved }) {
+export default function LaboratoryForm({ patient, record = {}, onSaved }) {
   const { user } = useAuth();
   const action = usePatientAction(onSaved);
   const [options, setOptions] = useState(null);
+  const [optionsError,setOptionsError]=useState('');
+  const location=useLocation(),actionsPanel=useRef(null),resultPanel=useRef(null);
+  const [resultFocus,setResultFocus]=useState(0);
+  useEffect(()=>{if(location.hash==='#lab-results')actionsPanel.current?.scrollIntoView({block:'start'});},[location.hash,patient.id]);
+  useEffect(()=>{if(resultFocus)resultPanel.current?.scrollIntoView({block:'start'});},[resultFocus,options]);
   const [kind, setKind] = useState('Plasma');
   const [outcome, setOutcome] = useState('Referred to DR lab');
   const [result, setResult] = useState('Usable result');
   const [checks, setChecks] = useState(Object.fromEntries(CHECKS.map(([k]) => [k, true])));
   const [repeatVl, setRepeatVl] = useState('');
   const [correcting, setCorrecting] = useState(null); // 'collection' | 'dispatch' | 'receipt' | 'result'
+  useEffect(()=>{if(correcting==='result')setResult(['Usable result','Unamplified','Sequencing failed'].includes(patient.status)?patient.status:'Usable result');},[correcting,patient.status]);
   useEffect(() => { setCorrecting(null); }, [patient.version, patient.status]);
   useEffect(() => { if (correcting === 'collection') setKind(patient.sample_type || 'Plasma'); }, [correcting, patient.sample_type]);
   const failedCheck = CHECKS.some(([k]) => !checks[k]);
   const lowVl = repeatVl !== '' && Number(repeatVl) < 1000;
-  useEffect(() => { labService.options().then(setOptions).catch(() => setOptions(null)); }, []);
+  useEffect(() => { labService.options().then(setOptions).catch(e => {setOptions(null);setOptionsError(e.message);}); }, []);
   const lab = patient.lab || { stage: 'Not requested', flags: [], tat: {} };
   const can = useCan();
   const canEdit = can('record_lab', patient) && !patient.reviewed_at && !patient.decision;
+  const hasResult=['Usable result','Unamplified','Sequencing failed'].includes(patient.status);
+  const readyForResult=lab.stage==='At DR laboratory';
   const max = nowLocal();
   const stageIndex = STAGES.indexOf(lab.stage);
   const submit = (fn, message, numeric = []) => event => {
@@ -62,6 +72,12 @@ export default function LaboratoryForm({ patient, onSaved }) {
   };
 
   return <>
+    <div ref={actionsPanel} id="lab-results" className="lab-action-panel"><Card title="Laboratory results and mutations" subtitle="Record or correct the laboratory report here. Run drug-resistance interpretation in Resistance.">
+      <div className="toolbar"><button type="button" className="btn" disabled={!canEdit||!options||(!hasResult&&!readyForResult)} onClick={()=>{if(hasResult)setCorrecting('result');setResultFocus(v=>v+1);}}>{hasResult?'Edit result':'Enter result'}</button><Link className="btn secondary" to={`/patients/${patient.id}?tab=laboratory#lab-mutations`}>Add / update mutations</Link></div>
+      {!canEdit&&<p className="notice info">{patient.reviewed_at||patient.decision?'This laboratory record is reviewed and locked. Use the amendment workflow for corrections.':'Sign in with a laboratory account to enter or edit results. Other accounts can view laboratory evidence.'}</p>}
+      {canEdit&&!hasResult&&!readyForResult&&<p className="notice info">Result entry becomes available after the sample is referred to the DR laboratory. Complete the sample steps below; mutations can be saved as evidence without changing the test outcome.</p>}
+      {optionsError&&<p className="notice error" role="alert">Could not load result-entry options: {optionsError}. Restart the backend and refresh this page.</p>}
+    </Card></div>
     <Card title="HIVDR sample" subtitle={`Attempt ${lab.attempt}${lab.dr_lab ? ` · DR laboratory: ${lab.dr_lab}` : ''}`}>
       <div className="lab-stages" aria-label="Sample progress">{STAGES.map((s, i) => <span key={s} className={i < stageIndex ? 'done' : i === stageIndex ? 'current' : ''}>{s}</span>)}</div>
       {lab.stage === 'Returned to facility' && <p className="notice error">{patient.status === 'Rejected' ? 'Rejected at CPHL' : 'Deferred to facility'}: {patient.cphl_reason || patient.failure_reason}</p>}
@@ -148,36 +164,32 @@ export default function LaboratoryForm({ patient, onSaved }) {
       </div><div className="form-actions"><button className="btn">{correcting === 'receipt' ? 'Save correction' : 'Record receipt'}</button></div></fieldset></form>
     </Card>}
 
-    {canEdit && options && (lab.stage === 'At DR laboratory' || correcting === 'result') && <Card title={correcting === 'result' ? 'Correct: genotype result' : '5. Record the genotype result'} subtitle={`Turnaround target ${options.tat_days} days from CPHL receipt`}>
+    {canEdit && options && (lab.stage === 'At DR laboratory' || correcting === 'result') && <div ref={resultPanel} className="lab-result-form"><Card title={correcting === 'result' ? 'Correct: genotype result' : '5. Record the genotype result'} subtitle={`Turnaround target ${options.tat_days} days from CPHL receipt`} action={correcting==='result'&&<button type="button" className="btn secondary small" onClick={()=>setCorrecting(null)}>Cancel editing</button>}>
       <form key={correcting || 'new'} onSubmit={event => { event.preventDefault(); const f = new FormData(event.currentTarget); const data = {}; const levels = {};
         for (const [k, v] of f.entries()) { if (k.startsWith('level:')) { if (v) levels[k.slice(6)] = v; } else if (v !== '') data[k] = v; }
         data.drug_levels = levels; action.run(() => labService.result(patient.id, data), correcting === 'result' ? 'Result corrected' : 'Result recorded'); }}><fieldset disabled={action.busy}>{correcting === 'result' && <Reason />}<div className="form-grid">
         <Field label="Outcome"><select name="outcome" value={result} onChange={e => setResult(e.target.value)}><option>Usable result</option><option>Unamplified</option><option>Sequencing failed</option></select></Field>
-        <Field label="Tested on"><input name="tested_at" type="date" max={max.slice(0, 10)} required defaultValue={correcting === 'result' ? dateOnly(patient.tested_at) : ''} /></Field>
+        <Field label="Tested on"><input name="tested_at" type="date" max={max.slice(0, 10)} required defaultValue={correcting === 'result' ? sourceDate(patient.tested_at||record.dateTestedForDR) : ''} /></Field>
         <Field label="Result released on"><input name="released_at" type="date" max={max.slice(0, 10)} required defaultValue={correcting === 'result' ? dateOnly(patient.report_at) : ''} /></Field>
-        {result !== 'Usable result' && <Field label="Reason the test was unsuccessful" full><textarea name="failure_reason" required maxLength="3000" /></Field>}
+        {result !== 'Usable result' && <Field label="Reason the test was unsuccessful" full><textarea name="failure_reason" required maxLength="3000" defaultValue={correcting==='result'?patient.failure_reason||'':''}/></Field>}
         {result === 'Usable result' && <>
           <p className="field full tiny"><b>Mutations by drug class, as on the genotype report</b> — write them separated by spaces or commas, e.g. M184V K65R.</p>
-          <Field label="NRTI mutations"><input name="nrti" placeholder="e.g. M184V K65R" /></Field>
-          <Field label="NNRTI mutations"><input name="nnrti" placeholder="e.g. K103N G190A" /></Field>
-          <Field label="PI major mutations"><input name="pi_major" placeholder="e.g. I50V" /></Field>
-          <Field label="PI minor mutations"><input name="pi_minor" /></Field>
-          <Field label="INSTI mutations"><input name="insti" placeholder="e.g. R263K G118R" /></Field>
-          <Field label="Other / accessory mutations"><input name="other" /></Field>
-          <Field label={correcting === 'result' ? 'Current mutation list (edit here, or clear it and re-enter by drug class above)' : 'Or one list with genes (e.g. RT:M184V IN:R263K); write “none” if no mutations'} full><textarea name="mutations" maxLength="15000" defaultValue={correcting === 'result' ? patient.mutations || '' : ''} /></Field>
-          <Field label="Or paste the pol nucleotide sequence (FASTA)" full><textarea name="sequence" maxLength="100000" /></Field>
+          {MUTATION_GROUPS.map(g=><Field key={g.key} label={`${g.key} mutations`}><input name={g.key.toLowerCase()} defaultValue={correcting==='result'?mutationValue(record,g):''} placeholder={g.key==='PI'?'M46I, I54V':g.key==='INSTI'?'E157Q(99.7%)':'M184V'}/></Field>)}
+          <Field label="Other / accessory mutations"><input name="other" defaultValue={correcting==='result'?record['Other Mutations']||'':''}/></Field>
+          <Field label={correcting === 'result' ? 'Additional gene-prefixed mutations (optional; the group fields above are already prefilled)' : 'Or one list with genes (e.g. RT:M184V IN:R263K); write “none” if no mutations'} full><textarea name="mutations" maxLength="15000" defaultValue={correcting === 'result' ? (MUTATION_GROUPS.some(g=>mutationValue(record,g))?'':patient.suggested_mutations||patient.mutations||'') : ''} /></Field>
+          <Field label="Or paste the pol nucleotide sequence (FASTA)" full><textarea name="sequence" maxLength="100000" defaultValue={correcting==='result'?patient.sequence||'':''}/></Field>
           <Field label="HIV-1 subtype (from the report or Stanford, e.g. A1, D, C)"><input name="subtype" maxLength="40" defaultValue={correcting === 'result' ? patient.subtype || '' : ''} /></Field>
-          <details className="field full"><summary>Drug resistance levels as printed on the report (optional — Stanford fills these when run)</summary>
-            <div className="form-grid" style={{ marginTop: 10 }}>{(options.drugs || []).map(d => <Field key={d} label={d}><select name={`level:${d}`} defaultValue=""><option value="">Not reported</option>{(options.levels || []).map(l => <option key={l}>{l}</option>)}</select></Field>)}</div>
+          <details open className="field full"><summary>Drug resistance levels printed on the laboratory report (optional)</summary>
+            <div className="form-grid" style={{ marginTop: 10 }}>{(options.drugs || []).map(d => <Field key={d} label={d}><select name={`level:${d}`} defaultValue={correcting==='result'?record['Resistance to '+d]||'':''}><option value="">Not reported</option>{(options.levels || []).map(l => <option key={l}>{l}</option>)}</select></Field>)}</div>
           </details>
           <p className="tiny muted field full">HIVDR testing in Uganda is genotypic: the lab sequences the pol gene (protease, reverse transcriptase, integrase) and reports mutations. Phenotypic testing is not used. Either the mutation list or the sequence is needed for the Stanford interpretation.</p>
         </>}
       </div><div className="form-actions"><button className="btn">{correcting === 'result' ? 'Save correction' : 'Record result'}</button></div></fieldset></form>
-    </Card>}
+    </Card></div>}
 
-    {patient.status === 'Usable result' && <Card title="6. Interpret the result" subtitle="Stanford HIVdb drug-level interpretation, then release to the facility">
-      <p>Run the Stanford interpretation on the Resistance tab. The drug levels feed the committee’s suggested action.</p>
-      <Link className="btn" to={`/patients/${patient.id}?tab=resistance`}>Open Resistance tab →</Link>
+    {patient.status === 'Usable result' && <Card title="6. Automatic interpretation and clinician review" subtitle="Stanford evidence is prepared automatically after a usable result is saved">
+      <p>Saving a usable laboratory result automatically queues Stanford interpretation and a system draft for clinician review. Follow progress, resolve analysis problems and approve the clinical decision in Discussion.</p>
+      <Link className="btn" to={`/patients/${patient.id}?tab=discussion`}>Open clinician review →</Link> <Link className="text-link" to={`/patients/${patient.id}?tab=resistance`}>View resistance details →</Link>
     </Card>}
 
     {canEdit && ['Pending', 'Unamplified', 'Sequencing failed', 'Rejected', 'Deferred'].includes(patient.status) && <Card title="Request a new sample" subtitle={patient.status === 'Pending' ? 'For a sample lost, leaking, broken or unusable before a result' : 'After rejection, deferral or an unsuccessful test'}>
@@ -201,7 +213,7 @@ function CorrectionPicker({ patient, lab, correcting, setCorrecting }) {
     ['collection', 'Sample collection', Boolean(patient.sample_at)],
     ['dispatch', 'Hub pick-up', Boolean(patient.dispatched_at)],
     ['receipt', 'CPHL receipt', Boolean(patient.cphl_outcome) && !['Usable result', 'Unamplified', 'Sequencing failed'].includes(patient.status)],
-    ['result', 'Genotype result', ['Usable result', 'Unamplified', 'Sequencing failed'].includes(patient.status)],
+
   ].filter(([, , ok]) => ok);
   if (!steps.length) return null;
   return <div className="correction-bar"><span>Edit a recorded step:</span>{steps.map(([key, label]) => <button type="button" key={key} className={`btn small ${correcting === key ? '' : 'secondary'}`} onClick={() => setCorrecting(correcting === key ? null : key)}>{correcting === key ? `Cancel editing ${label.toLowerCase()}` : label}</button>)}<span className="tiny muted">Every edit needs a reason and is kept in the audit trail.</span></div>;

@@ -9,13 +9,14 @@ clinician must approve or change it; the suggestion and whether it was followed 
 Agreement with past Ugandan committee decisions is reported in RISK_SCORE.md.
 """
 import json
+import re
 from .eligibility_service import regimen_drugs
 
-VERSION = 'decision-support-2026.1'
+VERSION = 'decision-support-2026.2'
 LEVEL = {'Susceptible': 1, 'Potential Low-Level Resistance': 2, 'Low-Level Resistance': 3,
          'Intermediate Resistance': 4, 'High-Level Resistance': 5}
 NAMES = {1: 'Susceptible', 2: 'Potential low-level', 3: 'Low-level', 4: 'Intermediate', 5: 'High-level'}
-ALIAS = {'LPV': 'LPV/r', 'ATV': 'ATV/r', 'DRV': 'DRV/r', 'ZDV': 'AZT', 'FTC': '3TC', 'RTV': None}
+ALIAS = {'LPV': 'LPV/r', 'ATV': 'ATV/r', 'DRV': 'DRV/r', 'ZDV': 'AZT', 'RTV': None}
 INSTI, PI, NNRTI, NRTI = {'DTG', 'RAL', 'BIC', 'CAB', 'EVG'}, {'LPV/r', 'ATV/r', 'DRV/r'}, {'EFV', 'NVP', 'ETR', 'RPV', 'DOR'}, {'TDF', '3TC', 'ABC', 'AZT', 'TAF'}
 ALL_DRUGS = ['DTG', 'BIC', 'CAB', 'RAL', 'DRV/r', 'LPV/r', 'ATV/r', 'TDF', '3TC', 'ABC', 'AZT', 'EFV', 'NVP', 'ETR', 'DOR']
 SOURCES = {
@@ -37,7 +38,7 @@ def drug_levels(e, raw):
             if name and d.get('level'):
                 levels[name] = int(d['level'])
                 source = 'Stanford HIVdb ' + str(((interp or {}).get('version') or {}).get('text', ''))
-    if not levels:
+    if not interp:
         for drug in ALL_DRUGS:
             value = raw.get('Resistance to ' + drug)
             if value in LEVEL:
@@ -51,17 +52,25 @@ def suggest(patient, e, raw):
         return None
     levels, source = drug_levels(e, raw)
     regimen = patient.get('regimen') or raw.get('ART at sample collection(ART@VL@DR)') or ''
-    drugs = [ALIAS.get(d, d) for d in regimen_drugs(regimen)]
+    ordered=re.split(r'[-+/,]',str(regimen).upper().replace('/R','').replace(' ',''))
+    drugs = list(dict.fromkeys(ALIAS.get(d,d) for d in ordered if d))
     drugs = [d for d in drugs if d]
     current = [{'drug': d, 'level': levels.get(d), 'label': NAMES.get(levels.get(d), 'Not reported')} for d in drugs]
     active = [d for d in ALL_DRUGS if levels.get(d) is not None and levels[d] <= 2]
     base = {'version': VERSION, 'regimen': regimen, 'current_regimen': current, 'evidence_source': source,
+            'recommendation_source':'Local committee decision-support rules', 'requires_clinician':True,
+            'source_data_version':patient.get('data_version'),
             'fully_active_drugs': active, 'sources': SOURCES,
             'notice': 'Suggestion only. The clinician approves or changes it after reviewing history, adherence and psychosocial factors.'}
     if not levels:
         return {**base, 'action': None, 'rationale': ['No drug-level resistance results are recorded yet. Run the Stanford interpretation first.']}
     anchors = [d for d in drugs if d in INSTI | PI | NNRTI]
     nrtis = [d for d in drugs if d in NRTI]
+    missing=[d for d in drugs if levels.get(d) is None]
+    if missing:
+        return {**base,'action':None,'rationale':['No draft action: resistance was not assessed for '+', '.join(missing)+'. Review coverage and the full clinical history.']}
+    if len(anchors)>1:
+        return {**base,'action':None,'rationale':['Multiple anchor drugs require individualized clinician review; the system does not select a treatment action for this regimen.']}
     if not anchors or any(levels.get(d) is None for d in anchors):
         return {**base, 'action': None, 'rationale': ['The anchor drug of the current regimen could not be matched to a resistance result; review manually.']}
     anchor = anchors[0]
@@ -94,8 +103,8 @@ def suggest(patient, e, raw):
                        'Maintaining is usual practice; substituting the compromised NRTI is an alternative.')
         else:
             action = 'Maintained'
-            why.append('No meaningful resistance to the current regimen: the non-suppression is most likely due to adherence. '
-                       'Continue the regimen with intensified adherence and psychosocial support.')
+            why.append('The available genotype does not show low-level or higher resistance to the regimen. '
+                       'Draft for review: maintain while the clinician assesses adherence, interactions, treatment history and other causes of non-suppression.')
     if cls == 'NNRTI' and action == 'Maintained':
         why.append('Note: Uganda has transitioned most patients from NNRTI- to DTG-based regimens; consider a programmatic transition.')
     return {**base, 'action': action, 'alternative': alternative, 'anchor': anchor, 'anchor_class': cls,

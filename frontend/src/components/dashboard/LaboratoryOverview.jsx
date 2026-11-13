@@ -21,6 +21,6 @@ export default function LaboratoryOverview({ patients }) {
     <div className="lab-breakdown wrap">{dataset.map(tile)}</div>
     <h3 style={{ marginTop: 20 }}>Sample pipeline</h3>
     <div className="lab-breakdown wrap">{pipeline.map(tile)}</div>
-    <p className="tiny muted">P = Plasma; D or DBS = DBS. Amplified 1 means a result is recorded; 0 means no result. Plasma is the recommended sample (to JCRC; DBS to UVRI). Results are expected within 30 days of CPHL receipt.</p>
+
   </Card>;
 }

@@ -1,49 +1,53 @@
-import { useAuth, useCan } from '../../contexts/AuthContext.jsx';
-import { operationsService } from '../../services/operationsService.js';
-import { decisionService } from '../../services/decisionService.js';
+import {useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {useAuth,useCan} from '../../contexts/AuthContext.jsx';
+import {operationsService} from '../../services/operationsService.js';
+import {decisionService} from '../../services/decisionService.js';
 import usePatientAction from '../../hooks/usePatientAction.js';
-import { formatDate } from '../../utils/format.js';
+import {formatDate} from '../../utils/format.js';
+import {ACTION_LABELS,reviewStage} from '../../utils/discussion.js';
 import Card from '../common/Card.jsx';
 import Badge from '../common/Badge.jsx';
-import FormField from '../common/FormField.jsx';
 import Feedback from '../common/Feedback.jsx';
 import ViewOnly from '../common/ViewOnly.jsx';
+const COLORS={1:'green',2:'yellow',3:'yellow',4:'red',5:'red'};
 
-const LEVEL_COLOR = { 1: 'green', 2: 'green', 3: 'yellow', 4: 'red', 5: 'red' };
-
-export function SuggestionCard({ suggestion }) {
-  if (!suggestion) return null;
-  return <Card title="Suggested committee action" subtitle="Decision support from the Stanford levels for the current regimen, WHO 2021 and MoH guidance">
-    {suggestion.action ? <p><Badge color={suggestion.action === 'Maintained' ? 'green' : 'red'}>{suggestion.action}</Badge>{suggestion.alternative && <span className="tiny muted"> · alternative: {suggestion.alternative}</span>}{suggestion.followed !== undefined && <span className="tiny muted"> · {suggestion.followed ? 'followed by the clinician' : 'clinician chose differently'}</span>}</p> : null}
-    {(suggestion.rationale || []).map(r => <p key={r}>{r}</p>)}
-    {suggestion.current_regimen?.length > 0 && <div className="table-wrap"><table><thead><tr><th>Drug in current regimen ({suggestion.regimen})</th><th>Resistance</th></tr></thead><tbody>
-      {suggestion.current_regimen.map(d => <tr key={d.drug}><td>{d.drug}</td><td><Badge color={LEVEL_COLOR[d.level] || ''}>{d.label}</Badge></td></tr>)}</tbody></table></div>}
-    {suggestion.fully_active_drugs?.length > 0 && <p className="tiny">Predicted fully active (susceptible or potential low-level): {suggestion.fully_active_drugs.join(', ')}</p>}
-    <p className="tiny muted">{suggestion.notice} Evidence: {suggestion.evidence_source || 'none recorded'}. This rule set agreed with 78.5% of 11,105 past Ugandan committee decisions.</p>
+export function SuggestionCard({suggestion}) {
+  return <Card title="System-generated draft action" subtitle="System draft using Stanford resistance evidence; clinician approval required.">
+    {suggestion?.action?<p><Badge color={suggestion.action==='Maintained'?'green':'yellow'}>{ACTION_LABELS[suggestion.action]}</Badge>{suggestion.alternative&&<span> · alternative for review: {ACTION_LABELS[suggestion.alternative]}</span>}</p>:<p className="notice info">{suggestion?'Individual clinician assessment required; no automatic action was selected.':'A draft will appear after Stanford analysis is saved.'}</p>}
+    {(suggestion?.rationale||[]).map(r=><p key={r}>{r}</p>)}
+    {suggestion?.current_regimen?.length>0&&<div className="table-wrap"><table><thead><tr><th>Drug in regimen ({suggestion.regimen})</th><th>Resistance evidence</th></tr></thead><tbody>{suggestion.current_regimen.map(d=><tr key={d.drug}><td>{d.drug}</td><td><Badge color={COLORS[d.level]||''}>{d.label}</Badge></td></tr>)}</tbody></table></div>}
+    {suggestion?.fully_active_drugs?.length>0&&<p className="tiny">Drugs reported susceptible or with potential low-level resistance: {suggestion.fully_active_drugs.join(', ')}. This list does not define a complete replacement regimen.</p>}
+    {suggestion&&<p className="tiny muted">Evidence: {suggestion.evidence_source||'No interpretation'} · Draft rule version: {suggestion.version}. {suggestion.notice}</p>}
+    <Link className="text-link tiny" to="/help#clinical-decision-support">Sources and review guidance</Link>
   </Card>;
 }
 
-export default function DecisionForm({ patient, onSaved }) {
-  const { user } = useAuth();
-  const can = useCan();
-  const approval = usePatientAction(onSaved);
-  const canDecide = can('review_and_decide', patient);
-  const suggestion = patient.suggestion;
-  function approve(event) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); approval.run(() => decisionService.approve(patient.id, data), 'Committee decision approved; it is now visible to the nurse/counsellor for implementation'); }
+export default function DecisionForm({patient,onSaved}) {
+  const {user}=useAuth(),can=useCan(),approval=usePatientAction(onSaved);
+  const suggestion=patient.suggestion,stage=reviewStage(patient);
+  const [decision,setDecision]=useState(''),[regimen,setRegimen]=useState(''),[notes,setNotes]=useState(''),[acknowledged,setAcknowledged]=useState(false);
+  useEffect(()=>{setDecision(suggestion?.action||'');setRegimen(suggestion?.action==='Maintained'?patient.regimen||'':'');setNotes('');setAcknowledged(false);},[patient.id,patient.version,patient.data_version,suggestion?.action]);
+  const ready=Boolean(patient.interpretation)&&stage.key!=='processing'&&patient.pre_complete&&!(patient.approval_blockers?.length);
+  function approve(event) {
+    event.preventDefault();
+    approval.run(()=>decisionService.approve(patient.id,{decision,recommended_regimen:regimen,decision_notes:notes,evidence_reviewed:acknowledged,expected_version:patient.version,expected_data_version:patient.data_version}),
+      'Clinician approval saved. The nurse or counsellor can now record implementation.');
+  }
   return <>
-    <SuggestionCard suggestion={suggestion} />
-    <Card title="Committee decision" subtitle="Approved by a clinician; the nurse or counsellor then implements it">
-      <Feedback error={approval.error} success={approval.success} />
-      {patient.decision ? <><div className="notice info">Approved decision: <b>{patient.decision}</b> · {formatDate(patient.decision_at)}</div><div className="detail-list"><div><label>Intended regimen</label>{patient.recommended_regimen || 'Missing'}</div><div><label>Committee rationale</label>{patient.decision_notes || 'Missing'}</div></div></> : <>
-        {patient.approval_blockers?.length > 0 && <div className="notice"><b>A decision cannot be approved yet</b><ul>{patient.approval_blockers.map(b => <li key={b}>{b}</li>)}</ul></div>}
-        {!canDecide && <ViewOnly action="review_and_decide" />}
-        {canDecide && <form onSubmit={approve}><fieldset disabled={patient.status !== 'Usable result' || !patient.pre_complete || approval.busy}><div className="form-grid">
-          <FormField label="Committee decision" name="decision"><select id="decision" name="decision" required defaultValue={suggestion?.action || ''}><option value="">Choose decision…</option>{['Maintained', 'Substituted', 'Switched'].map(value => <option key={value}>{value}</option>)}</select></FormField>
-          <FormField label="Intended regimen" name="recommended_regimen" required defaultValue={suggestion?.action === 'Maintained' ? patient.regimen || '' : ''} />
-          <FormField label="Committee rationale (explain if different from the suggestion)" name="decision_notes" full><textarea id="decision_notes" name="decision_notes" required maxLength="5000" /></FormField>
-        </div><div className="form-actions"><button className="btn">Approve decision</button></div></fieldset></form>}
+    {(!patient.decision||suggestion)&&<SuggestionCard suggestion={suggestion}/>}
+    <Card title="Clinician approval" subtitle="Approve the draft or record a different clinical decision. No treatment change is implemented automatically.">
+      <Feedback error={approval.error} success={approval.success}/>
+      {patient.decision?<><p className="notice info"><b>{ACTION_LABELS[patient.decision]||patient.decision}</b> approved by {patient.reviewer_name||'the clinician'} · {formatDate(patient.decision_at)}</p><dl className="resistance-context"><div><dt>Approved regimen</dt><dd>{patient.recommended_regimen||'Not recorded'}</dd></div><div><dt>Clinical rationale</dt><dd>{patient.decision_notes||'Not recorded'}</dd></div><div><dt>Implementation</dt><dd>{patient.implemented_at?'Recorded':'Awaiting nurse / counsellor'}</dd></div></dl></>:<>
+        {patient.approval_blockers?.length>0&&<div className="notice"><b>Approval prerequisites</b><ul>{patient.approval_blockers.map(b=><li key={b}>{b}</li>)}</ul></div>}
+        {!can('review_and_decide',patient)?<ViewOnly action="review_and_decide"/>:<form onSubmit={approve}><fieldset disabled={!ready||approval.busy}><div className="form-grid">
+          <div className="field"><label htmlFor="clinical-action">Decision for approval</label><select id="clinical-action" required value={decision} onChange={e=>{const next=e.target.value;setDecision(next);if(next==='Maintained')setRegimen(patient.regimen||'');else if(decision==='Maintained')setRegimen('');}}><option value="">Select the clinician decision…</option>{Object.entries(ACTION_LABELS).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></div>
+          <div className="field"><label htmlFor="clinical-regimen">Regimen approved by the clinician</label><input id="clinical-regimen" required maxLength={300} value={regimen} onChange={e=>setRegimen(e.target.value)} placeholder="Enter the complete regimen"/></div>
+          <div className="field full"><label htmlFor="clinical-rationale">Clinical rationale (explain any change from the draft)</label><textarea id="clinical-rationale" required minLength={20} maxLength={5000} value={notes} onChange={e=>setNotes(e.target.value)}/></div>
+          <label className="checkbox field full"><input type="checkbox" required checked={acknowledged} onChange={e=>setAcknowledged(e.target.checked)}/>I reviewed the latest Stanford interpretation, treatment/exposure history, adherence and relevant clinical context.</label>
+        </div><div className="form-actions"><button className="btn">{approval.busy?'Saving approval…':decision===suggestion?.action?'Approve draft action':'Approve clinician decision'}</button></div></fieldset></form>}
       </>}
     </Card>
-    {user.role === 'clinician' && user.facility === patient.facility && (patient.decision || patient.reviewed_at) && <Card title="Correct a reviewed record"><p className="tiny muted">Reopening archives the previous decision and implementation state. The record returns to review so laboratory evidence and the committee decision can be corrected.</p><form onSubmit={e => { e.preventDefault(); const reason = new FormData(e.currentTarget).get('reason'); approval.run(() => operationsService.amend(patient.id, reason), 'Amendment opened; previous state retained'); }}><label htmlFor="amend-reason">Reason for correction</label><textarea id="amend-reason" name="reason" required minLength={10} /><button className="btn secondary" disabled={approval.busy} style={{ marginTop: 12 }}>Open audited amendment</button></form></Card>}
+    {user.role==='clinician'&&(patient.decision||patient.reviewed_at)&&<Card title="Amend a reviewed decision"><p>The previous decision and implementation history are retained when the episode is reopened.</p><form onSubmit={e=>{e.preventDefault();approval.run(()=>operationsService.amend(patient.id,new FormData(e.currentTarget).get('reason')),'Audited amendment opened.');}}><label htmlFor="amend-reason">Reason for amendment</label><textarea id="amend-reason" name="reason" required minLength={10}/><button className="btn secondary" disabled={approval.busy}>Open amendment</button></form></Card>}
   </>;
 }

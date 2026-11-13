@@ -10,7 +10,7 @@ export default function LabResultsPage() {
   return <>
     <PageHeader title="Lab results" description={`The laboratory worklist: ${count.toLocaleString()} patients with a DR test to request, a sample to collect or follow, or a result.`} />
     <PatientLookup title="Find a patient to request a test or enter a sample or result" />
-    <div className="section-gap"><LaboratoryOverview patients={visiblePatients} /></div>
     <LabWorklist patients={visiblePatients} />
+    <details className="section-gap"><summary>Laboratory status summary</summary><LaboratoryOverview patients={visiblePatients}/></details>
   </>;
 }

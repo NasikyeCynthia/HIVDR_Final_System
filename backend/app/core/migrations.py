@@ -3,6 +3,12 @@ from ..services.discussion_status import classify_discussion
 
 
 def migrate(con):
+    con.execute('CREATE TABLE IF NOT EXISTS notification_reads(user_id INTEGER REFERENCES users(id),notification_key TEXT,read_at TEXT,PRIMARY KEY(user_id,notification_key))')
+    con.execute('''CREATE TABLE IF NOT EXISTS interpretation_jobs(
+        id INTEGER PRIMARY KEY,patient_id INTEGER REFERENCES patients(id),episode_version INTEGER NOT NULL,
+        input_kind TEXT,input_text TEXT,status TEXT NOT NULL,message TEXT DEFAULT '',
+        actor_id INTEGER REFERENCES users(id),created_at TEXT,started_at TEXT,finished_at TEXT)''')
+    con.execute('CREATE INDEX IF NOT EXISTS idx_interpretation_jobs_patient ON interpretation_jobs(patient_id,id)')
     additions = {'users': {'can_access_all': 'INTEGER DEFAULT 0'},
                  'patients': {'psychosocial_json': "TEXT DEFAULT '{}'", 'source_overrides_json': "TEXT DEFAULT '{}'", 'data_version': 'INTEGER DEFAULT 0', 'archived_at': 'TEXT', 'archive_reason': "TEXT DEFAULT ''", 'dataset_source': 'TEXT'},
                  'episodes': {'interpretation_json': 'TEXT', 'interpreted_at': 'TEXT', 'review_notes': "TEXT DEFAULT ''", 'discussion_status': "TEXT DEFAULT ''",

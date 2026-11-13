@@ -9,6 +9,21 @@ from ..services.audit_service import audit
 from ..services import stanford_service
 router = APIRouter(prefix='/api/workflow',tags=['Review and accountability'])
 
+@router.post('/patients/{patient_id}/retry-interpretation')
+def retry_interpretation(patient_id:int,user=Depends(current_user)):
+    if user['role'] not in ('lab','clinician'):raise DomainError('Only laboratory staff or clinicians can request analysis of the saved laboratory result.',403)
+    with connect() as con:
+        p,e=load_patient(con,user,patient_id)
+        from ..core.permissions import any_facility
+        if not any_facility(user) and user['facility']!=p['facility']:raise DomainError('Cross-facility access is read-only.',403)
+        if p.get('archived_at') or e.get('decision'):raise DomainError('This record is locked.',409)
+        if e['status']!='Usable result':raise DomainError('A usable laboratory result is required.')
+        from ..services.auto_interpretation import enqueue
+        job=enqueue(con,user,patient_id)
+    from ..services.auto_interpretation import schedule
+    schedule(patient_id)
+    return {'ok':True,'job_id':job}
+
 @router.post('/patients/{patient_id}/review')
 def mark_reviewed(patient_id:int,data:ReviewRequest,user=Depends(current_user)):
     with connect() as con:
@@ -68,7 +83,11 @@ def interpret(patient_id:int,data:InterpretationRequest,user=Depends(current_use
         if current['version']!=version or current['status']!='Usable result':
             raise DomainError('Lab result changed during analysis. Please rerun.',409)
         if current['decision']: raise DomainError('Approved interpretation is locked. Start an amendment workflow.',409)
-        con.execute('UPDATE episodes SET interpretation_json=?,interpreted_at=?,suggestion_json=NULL,version=version+1 WHERE patient_id=?',(json.dumps(result),now(),patient_id))
+        from ..services.suggestion_service import suggest
+        from ..services.record_service import effective_record
+        draft=suggest(p,{**current,'interpretation_json':json.dumps(result)},effective_record(p))
+        con.execute('UPDATE episodes SET interpretation_json=?,interpreted_at=?,suggestion_json=?,version=version+1 WHERE patient_id=?',(json.dumps(result),now(),json.dumps(draft),patient_id))
+        con.execute("UPDATE interpretation_jobs SET status='superseded',message='Replaced by a laboratory interpretation.',finished_at=? WHERE patient_id=? AND status IN ('pending','running')",(now(),patient_id))
         audit(con,user,'Stanford interpretation',patient_id,after={'kind':data.kind,'version':result.get('version')})
     return result
 

@@ -14,7 +14,7 @@ const SEGMENTS = [
 export const isLabWork = p => SEGMENTS.some(([, , test]) => test(p));
 
 export default function LabWorklist({ patients }) {
-  const [segment, setSegment] = useState('process');
+  const [segment, setSegment] = useState('all');
   const lab = patients.filter(isLabWork);
   const current = SEGMENTS.find(([key]) => key === segment);
   const shown = current ? lab.filter(current[2]) : lab;
