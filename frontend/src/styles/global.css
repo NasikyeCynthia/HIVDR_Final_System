@@ -113,3 +113,14 @@ body{min-height:100vh;overflow-y:auto}
 .inline-form{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0;padding:14px;border:1px solid #e3e9ec;border-radius:10px;background:#fbfcfd}
 .inline-form label{display:flex;flex-direction:column;gap:4px;font-size:12px}.inline-form label.checkbox{flex-direction:row;align-items:center}
 .registration-vl{border:1px solid #e3e9ec;border-radius:10px;padding:14px 16px;margin:14px 0}.registration-vl legend{font-weight:600;padding:0 6px}
+
+/* Resistance evidence remains visible before optional dataset fields. */
+.resistance-context{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:0 0 18px}
+.resistance-context dt{font-size:12px;color:#61757e;margin-bottom:5px}.resistance-context dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.resistance-patient-table th,.resistance-patient-table td{min-width:145px;vertical-align:top}
+.resistance-patient-table thead tr:first-child th{background:#edf4f6}.resistance-patient-table thead tr:nth-child(2) th{background:#f6f9fa}
+.resistance-patient-table td:first-child,.resistance-patient-table thead tr:first-child th:first-child{position:sticky;left:0;background:#fff;z-index:1;min-width:170px;box-shadow:2px 0 3px #0001}
+.resistance-patient-table thead tr:first-child th:first-child{background:#edf4f6;z-index:2}
+.resistance-patient-table .badge{white-space:normal;line-height:1.5}
+.resistance-patient-table tbody td:last-child,.resistance-patient-table thead tr:first-child th:last-child{position:sticky;right:0;background:#fff;z-index:1;min-width:135px;box-shadow:-2px 0 3px #0001}
+.resistance-patient-table thead tr:first-child th:last-child{background:#edf4f6;z-index:2}

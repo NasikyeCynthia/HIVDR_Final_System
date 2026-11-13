@@ -27,12 +27,12 @@ def patient_columns(user=Depends(current_user)):
     return {'columns': columns}
 
 @router.get('/table')
-def patient_table(ids: list[int]=Query(...), fields: list[str]=Query(default=[]), user=Depends(current_user)):
+def patient_table(ids: list[int]=Query(...), fields: list[str]=Query(default=[]), include_resistance: bool=False, user=Depends(current_user)):
     if not ids or len(ids)>25:
         raise DomainError('Select between 1 and 25 patient rows',400)
     selected=list(dict.fromkeys(field for field in fields if field in COLUMNS and (user['role'] != 'nurse' or not hidden_from_nurse(field))))
     placeholders=','.join('?' for _ in ids)
-    sql=f'SELECT id,facility,original_json,source_overrides_json FROM patients WHERE id IN ({placeholders})'
+    sql=f'SELECT p.id,p.facility,p.original_json,p.source_overrides_json,e.interpretation_json,e.interpreted_at FROM patients p LEFT JOIN episodes e ON e.patient_id=p.id WHERE p.id IN ({placeholders})'
     args=list(ids)
     with connect() as con:
         rows=con.execute(sql,args).fetchall()
@@ -41,7 +41,17 @@ def patient_table(ids: list[int]=Query(...), fields: list[str]=Query(default=[])
         result=[]
         for row in rows:
             raw={**json.loads(row['original_json'] or '{}'),**json.loads(row['source_overrides_json'] or '{}')}
-            result.append({'id':row['id'],'fields':{key:raw.get(key,'') for key in selected}})
+            item={'id':row['id'],'fields':{key:raw.get(key,'') for key in selected}}
+            if include_resistance:
+                saved=json.loads(row['interpretation_json'] or 'null')
+                # Return only display evidence for the current 25 rows, not sequences or mutation input.
+                item['interpretation']=None if not saved else {
+                    'provider':saved.get('provider'), 'version':saved.get('version'),
+                    'analysis':{'drugResistance':[
+                        {'gene':group.get('gene'), 'drugScores':group.get('drugScores',[])}
+                        for group in (saved.get('analysis') or {}).get('drugResistance',[])]}}
+                item['interpreted_at']=row['interpreted_at']
+            result.append(item)
         return result
 
 @router.post('')

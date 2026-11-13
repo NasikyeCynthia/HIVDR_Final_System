@@ -4,10 +4,27 @@ import unittest
 from unittest.mock import patch
 
 from app.core.errors import DomainError
-from app.services.stanford_service import analyze, validate_scores, LEVELS
+from app.services.stanford_service import analyze, validate_scores, check_connection, LEVELS
 
 
 class StanfordTests(unittest.TestCase):
+    def test_connection_check_sends_only_version_query(self):
+        payload={'data':{'currentVersion':{'text':'fixture','publishDate':'2026-01-01'}}}
+        with patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(payload).encode())) as request:
+            result=check_connection()
+        self.assertTrue(result['connected'])
+        sent=json.loads(request.call_args.args[0].data)
+        self.assertEqual(set(sent),{'query'})
+        self.assertNotIn('mutations',sent['query'])
+        self.assertEqual(result['version']['text'],'fixture')
+
+    def test_connection_check_rejects_failure_or_invalid_version(self):
+        for payload in [[],{}, {'data':{'currentVersion':None}}, {'errors':[{'message':'failed'}]}]:
+            with patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(payload).encode())),self.assertRaises(DomainError):
+                check_connection()
+        with patch('urllib.request.urlopen',side_effect=TimeoutError),self.assertRaises(DomainError):
+            check_connection()
+
     def payload(self, score=0, level=1):
         return {'data': {'currentVersion': {'text': 'fixture', 'publishDate': '2026-01-01'},
             'mutationsAnalysis': {'validationResults': [], 'drugResistance': [

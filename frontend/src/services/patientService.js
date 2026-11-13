@@ -2,7 +2,7 @@ import { request } from './api.js';
 export const patientService = {
   list: () => request('/patients'),
   columns: () => request('/patients/columns'),
-  table: (ids, fields) => request(`/patients/table?${ids.map(id=>`ids=${encodeURIComponent(id)}`).join('&')}${fields.length?'&'+fields.map(field=>`fields=${encodeURIComponent(field)}`).join('&'):''}`),
+  table: (ids, fields, includeResistance = false) => request(`/patients/table?${ids.map(id=>`ids=${encodeURIComponent(id)}`).join('&')}${fields.length?'&'+fields.map(field=>`fields=${encodeURIComponent(field)}`).join('&'):''}${includeResistance?'&include_resistance=true':''}`),
   get: id => request(`/patients/${id}`),
   create: data => request('/patients', { method: 'POST', data }),
   updateProfile: (id, data) => request(`/patients/${id}/profile`, { method: 'PATCH', data }),

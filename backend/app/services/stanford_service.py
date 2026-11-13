@@ -42,6 +42,24 @@ def validate_scores(analysis):
 def status():
     return {'connected': None, 'configured': True, 'message': 'Sierra API configured. Connection is checked when an analysis is requested.'}
 
+
+def check_connection():
+    """An explicit live version query, without patient data or a simulated interpretation."""
+    request = urllib.request.Request(URL, data=json.dumps({
+        'query': 'query { currentVersion { text publishDate } }'
+    }).encode(), headers={'Content-Type': 'application/json', 'User-Agent': 'HIVDR-Surveillance/0.3'})
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            payload = json.load(response)
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        raise DomainError('The backend could not reach Stanford. Check its internet connection and try again.', 502)
+    data = payload.get('data') if isinstance(payload, dict) else None
+    version = data.get('currentVersion') if isinstance(data, dict) else None
+    if not isinstance(payload, dict) or payload.get('errors') or not isinstance(version, dict) or not version.get('text'):
+        raise DomainError('Stanford did not return an algorithm version. Connection could not be verified.', 502)
+    return {'connected': True, 'provider': 'Stanford HIVdb Sierra', 'version': version,
+            'checked_at': datetime.now(timezone.utc).isoformat()}
+
 def analyze(kind, text):
     if kind not in ('mutations', 'sequence'):
         raise DomainError('Choose mutations or sequence input.')

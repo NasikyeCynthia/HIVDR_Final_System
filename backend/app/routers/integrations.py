@@ -5,3 +5,7 @@ router = APIRouter(prefix='/api/integrations', tags=['Integration readiness'])
 @router.get('/status')
 def integration_status(user=Depends(current_user)):
     return {'stanford': stanford_service.status(), 'machine_learning': ml_service.status()}
+
+@router.get('/stanford/check')
+def check_stanford(user=Depends(current_user)):
+    return stanford_service.check_connection()

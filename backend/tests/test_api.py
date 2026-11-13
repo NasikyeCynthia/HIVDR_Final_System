@@ -60,3 +60,40 @@ class ApiTests(unittest.TestCase):
     def test_foreign_origin_rejected(self):
         result = self.client.post('/api/auth/login', json={'username': 'admin', 'password': self.password}, headers={'Origin': 'https://untrusted.example'})
         self.assertEqual(result.status_code, 403)
+
+    def test_resistance_table_keeps_exposure_and_api_results_separate(self):
+        import json
+        self.login('lab')
+        saved={'provider':'Stanford HIVdb Sierra','version':{'text':'fixture'},'submitted_mutations':['RT:M184V'],
+               'analysis':{'drugResistance':[{'gene':{'name':'RT'},'drugScores':[{'drug':{'displayAbbr':'3TC'},'score':60,'level':5,'text':'High-Level Resistance'}]}]}}
+        with self.database.connect() as con:
+            old=dict(con.execute('SELECT source_overrides_json FROM patients WHERE id=1').fetchone())
+            original=con.execute('SELECT interpretation_json FROM episodes WHERE patient_id=1').fetchone()[0]
+            con.execute('UPDATE patients SET source_overrides_json=? WHERE id=1',(json.dumps({'exposure_to_AZT':'0','exposure_to_DTG':'','Resistance to 3TC':'Susceptible'}),))
+            con.execute('UPDATE episodes SET interpretation_json=? WHERE patient_id=1',(json.dumps(saved),))
+        try:
+            r=self.client.get('/api/patients/table',params=[('ids',1),('fields','exposure_to_AZT'),('fields','exposure_to_DTG'),('fields','Resistance to 3TC'),('include_resistance','true')])
+            self.assertEqual(r.status_code,200,r.text)
+            row=r.json()[0]
+            self.assertEqual(row['fields']['exposure_to_AZT'],'0')
+            self.assertEqual(row['fields']['exposure_to_DTG'],'')
+            self.assertEqual(row['fields']['Resistance to 3TC'],'Susceptible')
+            self.assertEqual(row['interpretation']['analysis']['drugResistance'][0]['drugScores'][0]['level'],5)
+            self.assertNotIn('submitted_mutations',row['interpretation'])
+            self.assertNotIn('interpretation',self.client.get('/api/patients/table?ids=1').json()[0])
+        finally:
+            with self.database.connect() as con:
+                con.execute('UPDATE patients SET source_overrides_json=? WHERE id=1',(old['source_overrides_json'],))
+                con.execute('UPDATE episodes SET interpretation_json=? WHERE patient_id=1',(original,))
+
+    def test_connection_check_requires_login_and_calls_live_adapter(self):
+        from unittest.mock import patch
+        self.client.cookies.clear()
+        self.assertEqual(self.client.get('/api/integrations/stanford/check').status_code,401)
+        self.login('lab')
+        result={'connected':True,'version':{'text':'fixture'},'checked_at':'2026-11-13T08:00:00Z'}
+        with patch('app.services.stanford_service.check_connection',return_value=result) as check:
+            response=self.client.get('/api/integrations/stanford/check')
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.json(),result)
+        check.assert_called_once()
