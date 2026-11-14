@@ -1,4 +1,4 @@
-import ModelReport from '../components/settings/ModelReport.jsx';
+import { Link } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card from '../components/common/Card.jsx';
@@ -12,7 +12,7 @@ export default function RiskAssessmentPage() {
   const due = patients.filter(p => p.eligibility?.status === 'eligible' && !p.referred_at).length;
   return <>
     <PageHeader title="Risk assessment" description={`${flagged} patient(s) flagged at high risk of drug resistance · ${due} eligible for a DR test and not yet requested.`} />
-    <div className="grid-half"><RiskChart patients={patients} /><EligibilityChart patients={patients} /></div>
+    <p className="tiny muted">Rules-based risk · ML research estimate · DR-test eligibility <Link className="text-link" to="/help#risk-assessment">Understand the differences →</Link></p><div className="grid-half"><RiskChart patients={patients} /><EligibilityChart patients={patients} /></div>
     <PatientList patients={patients} tab="risk" />
 
   </>;

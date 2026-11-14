@@ -23,18 +23,21 @@ export default function ModelResults({ patient }) {
       comparison = { label: group[1], n: peers.length, median: median(peers), sooner, beyond: ttf[0] > 36 };
     }
   }
-  return <Card title="Model results for this patient" subtitle="Research models; they support but never replace the laboratory test and the clinician">
+  return <Card title="Research estimate and observed history" subtitle="Separate from the rules-based score and DR-test eligibility">
     <div className="model-grid">
       <div className="model-box">
-        <h3>Chance of drug resistance</h3>
+        <h3>ML panel-resistance estimate</h3>
         {!ml ? <p className="muted">Not calculated yet.</p> : !ml.available ? <p className="muted">{ml.reason}</p> : <>
           <div className="model-probability">{Math.round(ml.probability * 100)}<small>%</small></div>
-          <Badge color={ml.above_research_threshold ? 'red' : 'green'}>{ml.above_research_threshold ? 'Above' : 'Below'} the research threshold ({Math.round((ml.threshold || 0.64) * 100)}%)</Badge>
-          <p className="tiny muted">Estimated chance that the virus has low-level or higher resistance to at least one of 12 drugs, from viral load, age, sex, line, regimen, years on ART and earlier viral loads. Random forest; AUROC 0.72 on facilities it had not seen.</p>
+          <Badge color={ml.above_research_threshold ? 'yellow' : ''}>{ml.above_research_threshold ? 'Above' : 'Below'} the research threshold ({Math.round(ml.threshold * 100)}%)</Badge>
+          <p className="tiny muted">Any low-level-or-higher resistance in the 12-drug RT/IN panel, estimated for referred and tested patients. PI-only resistance is outside this target.</p>
+          <p className="notice info">Research estimate, not a laboratory result. A below-threshold estimate does not rule out resistance or change DR-test eligibility.</p>
+          <p className="tiny muted">{ml.model} · {ml.version}. Adherence is used by the points score, not this model.</p>
+          {ml.missing_features?.length > 0 && <p className="tiny muted">Missing model inputs: {ml.missing_features.join(', ')}. Saved training values or missing categories were used.</p>}
         </>}
       </div>
       <div className="model-box">
-        <h3>Time to treatment failure</h3>
+        <h3>Observed time to treatment failure</h3>
         {!ttf ? <p className="muted">No dated start of the current regimen with a later viral load ≥1000, so it cannot be calculated.</p> : <>
           <div className="model-probability">{ttf[0].toFixed(0)}<small> months</small></div>
           <p>Started the current regimen on {fmt(ttf[1])}; first viral load ≥1000 on {fmt(ttf[2])}.</p>

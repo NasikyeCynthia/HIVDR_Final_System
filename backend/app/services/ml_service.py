@@ -1,5 +1,6 @@
 """Portable JSON inference: no sklearn/joblib runtime or executable model loading."""
 import json
+import hashlib
 import math
 import struct
 from functools import lru_cache
@@ -27,10 +28,25 @@ def predict_artifact(artifact,features):
         p=sum(values)/len(values)
     p=max(1e-6,min(1-1e-6,p));c=artifact['calibration']
     return sigmoid(c['intercept']+c['coefficient']*math.log(p/(1-p)))
+def validation_report(artifact):
+    """Only expose an aggregate audit matching the exact installed artifact."""
+    path=ARTIFACTS/'validation.json'
+    try:
+        report=json.loads(path.read_text(encoding='utf-8'))
+        digest=hashlib.sha256((ARTIFACTS/'model.json').read_bytes()).hexdigest()
+        if (report.get('schema_version')==1 and report.get('model_sha256')==digest
+                and report.get('data_sha256')==artifact['metadata']['data_sha256']
+                and report.get('model_version')==artifact['metadata']['version']):
+            return report
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
+
 def status():
     artifact=model()
     return {'connected':bool(artifact),'message':'Trained research model available' if artifact else 'No model artifact found',
-            'metadata':artifact['metadata'] if artifact else None}
+            'metadata':artifact['metadata'] if artifact else None,
+            'validation':validation_report(artifact) if artifact else None}
 def predict(raw,patient):
     artifact=model()
     if not artifact:return {'available':False,'reason':'Model artifact missing'}
