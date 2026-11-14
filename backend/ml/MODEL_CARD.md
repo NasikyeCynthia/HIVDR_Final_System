@@ -93,3 +93,7 @@ The 500-replicate facility-cluster audit reproduced all original test metrics. A
 Performance differs substantially by subgroup at the unchanged 0.64 research cutoff. TDF-3TC-DTG sensitivity is 39.5% (221/559 positives detected), while all 87 third-line test records are flagged, yielding 0% specificity in that group. These descriptive results reinforce that this cutoff must not serve as a clinical gatekeeper. No subgroup-specific thresholds were fitted using this test set.
 
 The next model-development phase should define the intended clinical use and acceptable trade-offs with clinicians, then use development data for grouped model/calibration/threshold selection and a new untouched external or temporal evaluation. The present audit does not justify claiming improved model accuracy.
+
+## Retraining experiment
+
+See `RETRAINING.md` and `experiments/history-v2/metrics.json` for the newer history-based research candidate. It improved legacy-test AUROC to 0.744 and sensitivity to 74.1%, with specificity reduced to 62.5%. This candidate is not deployed and has not received fresh independent validation. The active model and all v1 results above remain unchanged.
