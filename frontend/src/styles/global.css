@@ -135,3 +135,16 @@ body{min-height:100vh;overflow-y:auto}
 .inbox-item{display:flex;gap:16px;padding:22px;border-bottom:1px solid var(--line)}.inbox-item.unread{background:#fcf5f7}.inbox-icon{color:var(--primary);padding-top:3px}.inbox-content{flex:1;min-width:0}.inbox-heading{display:flex;align-items:center;gap:10px}.inbox-heading h2{font-size:14px;margin:0}.inbox-content p{font-size:13px;margin:8px 0;color:#4b626d}.inbox-actions{display:flex;gap:22px;margin-top:12px}.unread-dot{width:7px;height:7px;border-radius:50%;background:var(--primary)}
 .settings-row{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;border-bottom:1px solid var(--line)}.settings-row select{width:180px}.settings-row input[type=checkbox]{width:18px;height:18px}.help-topics{display:grid;gap:18px;margin:24px 0}.help-topics section{scroll-margin-top:20px}.help-topics p{line-height:1.8;margin:0}.density-compact td,.density-compact th{padding-top:9px;padding-bottom:9px}.density-compact .card-body{padding-top:16px;padding-bottom:16px}
 .notification-filters .segment.active{background:var(--primary);border-color:var(--primary)}
+
+/* Patient records: retain row colour under sticky identifier/action cells and hover. */
+.profile-before-incomplete{--profile-row-bg:#fff1f2;--profile-row-hover:#ffe4e6;--profile-accent:#b91c1c}
+.profile-after-incomplete{--profile-row-bg:#fff7ed;--profile-row-hover:#ffedd5;--profile-accent:#c2410c}
+.profile-before-complete{--profile-row-bg:#eff6ff;--profile-row-hover:#dbeafe;--profile-accent:#1d4ed8}
+.profile-after-complete{--profile-row-bg:#f0fdf4;--profile-row-hover:#dcfce7;--profile-accent:#15803d}
+.complete-dataset-table tr.profile-row td{background:var(--profile-row-bg)}
+.complete-dataset-table tr.profile-row:hover td{background:var(--profile-row-hover)}
+.complete-dataset-table tr.profile-row td:first-child{box-shadow:inset 4px 0 var(--profile-accent),2px 0 3px #0001}
+.complete-dataset-table .profile-row-status{display:block;color:var(--profile-accent);font-size:11px;font-weight:600;margin-top:6px;white-space:normal}
+.profile-legend{display:flex;flex-wrap:wrap;gap:10px 20px;margin:0 0 16px;font-size:12px}
+.profile-legend-item{display:inline-flex;align-items:center;gap:7px}
+.profile-legend-dot{width:12px;height:12px;border-radius:3px;background:var(--profile-row-hover);border:1px solid var(--profile-accent);flex-shrink:0}

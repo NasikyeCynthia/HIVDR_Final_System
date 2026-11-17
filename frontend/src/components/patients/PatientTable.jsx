@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Badge, { EligibilityBadge } from '../common/Badge.jsx';
 import { RiskBadge } from '../risk/RiskScoreCard.jsx';
+import { PROFILE_STATES, profileState } from '../../utils/profileStatus.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 function displayDatasetValue(field, value) {
   if (field === 'Sample Type') {
@@ -20,8 +21,8 @@ function displayDatasetValue(field, value) {
 export default function PatientTable({ patients, tab = 'overview', datasetView = false, columns = [], recordFields = {} }) {
   const { user } = useAuth();
   const isNurse = false; // all roles may view every column; editing is per role
-  if (datasetView) return <div className="table-wrap" tabIndex={0} aria-label="Complete patient dataset in source column order"><table className="complete-dataset-table"><thead><tr><th>Patient No.</th>{columns.filter(f=>f!=='Patient No.').map(field=><th key={field}>{field}</th>)}<th>Rules-based risk</th><th>DR-test eligibility</th><th>Action</th></tr></thead><tbody>{patients.map(patient=><tr key={patient.id}>
-    <td className="patient-cell">{recordFields[patient.id]?.['Patient No.']??patient.external_id}</td>
+  if (datasetView) return <div className="table-wrap" tabIndex={0} aria-label="Complete patient dataset in source column order"><table className="complete-dataset-table"><thead><tr><th>Patient No.</th>{columns.filter(f=>f!=='Patient No.').map(field=><th key={field}>{field}</th>)}<th>Rules-based risk</th><th>DR-test eligibility</th><th>Action</th></tr></thead><tbody>{patients.map(patient=><tr key={patient.id} className={`profile-row profile-${profileState(patient)}`}>
+    <td className="patient-cell">{recordFields[patient.id]?.['Patient No.']??patient.external_id}<small className="profile-row-status">{PROFILE_STATES[profileState(patient)].label}</small></td>
     {columns.filter(f=>f!=='Patient No.').map(field=><td key={field}>{recordFields[patient.id]?String(recordFields[patient.id][field]??'').trim()||'—':'Loading…'}</td>)}
     <td><RiskBadge risk={patient.risk}/>{patient.risk?.total!=null&&<div className="tiny muted">{patient.risk.total} points</div>}</td><td><EligibilityBadge patient={patient}/></td>
     <td><Link className="text-link" to={`/patients/${patient.id}?tab=record`}>Open full record →</Link></td>
