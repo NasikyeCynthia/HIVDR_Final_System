@@ -1,0 +1,4612 @@
+{
+  "protocol": {
+    "version": "hivdr-model-family-comparison-v1",
+    "selection": "Highest mean AUROC across the same four training-only facility-grouped folds. No model selection from legacy-test results.",
+    "calibration": "Each model: standardise raw margins on calibration data, then logistic calibration on 518 separate records / 94 facilities.",
+    "cutoff": "Each model: maximise balanced accuracy on 1057 other records / 95 facilities; ties prefer sensitivity.",
+    "legacy_test": "1739 previously examined records / 236 facilities. Exploratory reused comparison; not independent validation.",
+    "feature_schema": "history-v2; identical preprocessing protocol for every family, fitted within each training fold.",
+    "candidate_scope": "One fixed configuration per family; this is not exhaustive hyperparameter optimisation.",
+    "internal_validation": "No row-wise early-stopping validation and no SVC probability=True internal calibration.",
+    "export_policy": "Aggregate metrics only. No patient rows, individual predictions, support vectors or nearest-neighbour training data exported.",
+    "deployment": "Active model is not replaced by this experiment.",
+    "cv_seed": 20261114,
+    "declared_candidates": [
+      "Random forest (active configuration)",
+      "Logistic regression",
+      "Gradient boosting",
+      "Histogram gradient boosting",
+      "AdaBoost",
+      "SVM (RBF)",
+      "Nearest neighbours",
+      "Gaussian naive Bayes",
+      "Neural network (MLP)",
+      "XGBoost",
+      "LightGBM",
+      "CatBoost"
+    ],
+    "unavailable": {},
+    "parameters": {
+      "Random forest (active configuration)": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": "balanced",
+        "criterion": "gini",
+        "max_depth": 12,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 8,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 300,
+        "n_jobs": 2,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "Logistic regression": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": null,
+        "max_iter": 1500,
+        "multi_class": "deprecated",
+        "n_jobs": null,
+        "penalty": "l2",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "Gradient boosting": {
+        "ccp_alpha": 0.0,
+        "criterion": "friedman_mse",
+        "init": null,
+        "learning_rate": 0.05,
+        "loss": "log_loss",
+        "max_depth": 3,
+        "max_features": null,
+        "max_leaf_nodes": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 20,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "n_estimators": 200,
+        "n_iter_no_change": null,
+        "random_state": 42,
+        "subsample": 1.0,
+        "tol": 0.0001,
+        "validation_fraction": 0.1,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "Histogram gradient boosting": {
+        "categorical_features": "from_dtype",
+        "class_weight": "balanced",
+        "early_stopping": false,
+        "interaction_cst": null,
+        "l2_regularization": 5,
+        "learning_rate": 0.05,
+        "loss": "log_loss",
+        "max_bins": 255,
+        "max_depth": null,
+        "max_features": 1.0,
+        "max_iter": 250,
+        "max_leaf_nodes": 15,
+        "min_samples_leaf": 30,
+        "monotonic_cst": null,
+        "n_iter_no_change": 10,
+        "random_state": 42,
+        "scoring": "loss",
+        "tol": 1e-07,
+        "validation_fraction": 0.1,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "AdaBoost": {
+        "algorithm": "deprecated",
+        "estimator": null,
+        "learning_rate": 0.05,
+        "n_estimators": 200,
+        "random_state": 42
+      },
+      "SVM (RBF)": {
+        "C": 1,
+        "break_ties": false,
+        "cache_size": 256,
+        "class_weight": "balanced",
+        "coef0": 0.0,
+        "decision_function_shape": "ovr",
+        "degree": 3,
+        "gamma": "scale",
+        "kernel": "rbf",
+        "max_iter": -1,
+        "probability": false,
+        "random_state": 42,
+        "shrinking": true,
+        "tol": 0.001,
+        "verbose": false
+      },
+      "Nearest neighbours": {
+        "algorithm": "auto",
+        "leaf_size": 30,
+        "metric": "minkowski",
+        "metric_params": null,
+        "n_jobs": 2,
+        "n_neighbors": 35,
+        "p": 2,
+        "weights": "distance"
+      },
+      "Gaussian naive Bayes": {
+        "priors": null,
+        "var_smoothing": 0.01
+      },
+      "Neural network (MLP)": {
+        "activation": "relu",
+        "alpha": 1,
+        "batch_size": 128,
+        "beta_1": 0.9,
+        "beta_2": 0.999,
+        "early_stopping": false,
+        "epsilon": 1e-08,
+        "hidden_layer_sizes": [
+          64,
+          32
+        ],
+        "learning_rate": "constant",
+        "learning_rate_init": 0.001,
+        "max_fun": 15000,
+        "max_iter": 400,
+        "momentum": 0.9,
+        "n_iter_no_change": 20,
+        "nesterovs_momentum": true,
+        "power_t": 0.5,
+        "random_state": 42,
+        "shuffle": true,
+        "solver": "adam",
+        "tol": 0.0001,
+        "validation_fraction": 0.1,
+        "verbose": false,
+        "warm_start": false
+      },
+      "XGBoost": {
+        "objective": "binary:logistic",
+        "base_score": null,
+        "booster": null,
+        "callbacks": null,
+        "colsample_bylevel": null,
+        "colsample_bynode": null,
+        "colsample_bytree": 0.85,
+        "device": null,
+        "early_stopping_rounds": null,
+        "enable_categorical": false,
+        "eval_metric": "logloss",
+        "feature_types": null,
+        "feature_weights": null,
+        "gamma": null,
+        "grow_policy": null,
+        "importance_type": null,
+        "interaction_constraints": null,
+        "learning_rate": 0.05,
+        "max_bin": null,
+        "max_cat_threshold": null,
+        "max_cat_to_onehot": null,
+        "max_delta_step": null,
+        "max_depth": 4,
+        "max_leaves": null,
+        "min_child_weight": 10,
+        "missing": NaN,
+        "monotone_constraints": null,
+        "multi_strategy": null,
+        "n_estimators": 400,
+        "n_jobs": 2,
+        "num_parallel_tree": null,
+        "random_state": 42,
+        "reg_alpha": null,
+        "reg_lambda": 5,
+        "sampling_method": null,
+        "scale_pos_weight": null,
+        "subsample": 0.85,
+        "tree_method": null,
+        "validate_parameters": null,
+        "verbosity": 0
+      },
+      "LightGBM": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "colsample_bytree": 0.85,
+        "importance_type": "split",
+        "learning_rate": 0.04,
+        "max_depth": -1,
+        "min_child_samples": 30,
+        "min_child_weight": 0.001,
+        "min_split_gain": 0.0,
+        "n_estimators": 400,
+        "n_jobs": 2,
+        "num_leaves": 15,
+        "objective": null,
+        "random_state": 42,
+        "reg_alpha": 0.0,
+        "reg_lambda": 5,
+        "subsample": 0.85,
+        "subsample_for_bin": 200000,
+        "subsample_freq": 1,
+        "deterministic": true,
+        "force_col_wise": true,
+        "verbosity": -1
+      },
+      "CatBoost": {
+        "iterations": 400,
+        "learning_rate": 0.05,
+        "depth": 5,
+        "l2_leaf_reg": 6,
+        "loss_function": "Logloss",
+        "thread_count": 2,
+        "random_seed": 42,
+        "verbose": false,
+        "auto_class_weights": "Balanced",
+        "allow_writing_files": false
+      }
+    },
+    "environment": {
+      "python": "3.13.15",
+      "numpy": "2.2.6",
+      "sklearn": "1.6.1",
+      "scipy": "1.15.3",
+      "pandas": "2.2.3",
+      "xgboost": "3.1.2",
+      "lightgbm": "4.6.0",
+      "catboost": "1.2.8"
+    }
+  },
+  "completed_at": "2026-11-17T09:45:09.881739+00:00",
+  "data_sha256": "885c11865717583b7098d36f6dc65a485d2b3cb576ee62ee227c5f26d9a552c6",
+  "active_model_version": "hivdr-panel-v2-history",
+  "active_model_sha256": "3f5a3e9f647a584ab5182f1f3faa53fe46d36275117265d16fa51f528c885551",
+  "selected_by_training_cv": "Random forest (active configuration)",
+  "cv_ranking": [
+    "Random forest (active configuration)",
+    "CatBoost",
+    "Gradient boosting",
+    "LightGBM",
+    "XGBoost",
+    "Histogram gradient boosting",
+    "Neural network (MLP)",
+    "SVM (RBF)",
+    "Logistic regression",
+    "AdaBoost",
+    "Nearest neighbours",
+    "Gaussian naive Bayes"
+  ],
+  "development_results": {
+    "Random forest (active configuration)": {
+      "fold_auroc": [
+        0.7304749173736396,
+        0.7320501133301707,
+        0.7083769854879097,
+        0.7492122906351425
+      ],
+      "fold_average_precision": [
+        0.7518975912320229,
+        0.7870395212158396,
+        0.7457183185291367,
+        0.8119015666098112
+      ],
+      "cv_fit_seconds": 9.956244500001048,
+      "warnings": {},
+      "mean_cv_auroc": 0.7300285767067156,
+      "sd_cv_auroc": 0.016744074700272452,
+      "mean_cv_average_precision": 0.7741392493967026
+    },
+    "Logistic regression": {
+      "fold_auroc": [
+        0.7209518346209712,
+        0.7203752453419905,
+        0.6935884968155459,
+        0.7369090205554636
+      ],
+      "fold_average_precision": [
+        0.7393444956687163,
+        0.7663021024478337,
+        0.722085185123441,
+        0.7979369977633989
+      ],
+      "cv_fit_seconds": 0.6135673000026145,
+      "warnings": {},
+      "mean_cv_auroc": 0.7179561493334929,
+      "sd_cv_auroc": 0.017961254342166236,
+      "mean_cv_average_precision": 0.7564171952508475
+    },
+    "Gradient boosting": {
+      "fold_auroc": [
+        0.7328997642254174,
+        0.7319043809630119,
+        0.7040888953616748,
+        0.7440981023903721
+      ],
+      "fold_average_precision": [
+        0.7517847073679931,
+        0.7798294436055044,
+        0.7405083510921928,
+        0.8022388479888645
+      ],
+      "cv_fit_seconds": 32.73771719999968,
+      "warnings": {},
+      "mean_cv_auroc": 0.7282477857351191,
+      "sd_cv_auroc": 0.017028369609593027,
+      "mean_cv_average_precision": 0.7685903375136387
+    },
+    "Histogram gradient boosting": {
+      "fold_auroc": [
+        0.7333273687977601,
+        0.728087433218918,
+        0.6981576833273042,
+        0.7471808296415626
+      ],
+      "fold_average_precision": [
+        0.7519402789089309,
+        0.7729337305466609,
+        0.7367587183123496,
+        0.8042621486280963
+      ],
+      "cv_fit_seconds": 7.3225461000001815,
+      "warnings": {},
+      "mean_cv_auroc": 0.7266883287463862,
+      "sd_cv_auroc": 0.02065570677477934,
+      "mean_cv_average_precision": 0.7664737190990094
+    },
+    "AdaBoost": {
+      "fold_auroc": [
+        0.7096472854346041,
+        0.7203907487853052,
+        0.6861848564999038,
+        0.7242740833747917
+      ],
+      "fold_average_precision": [
+        0.7245456190694147,
+        0.7659356747962863,
+        0.710119520926082,
+        0.7894430445139013
+      ],
+      "cv_fit_seconds": 16.437788699999146,
+      "warnings": {},
+      "mean_cv_auroc": 0.7101242435236512,
+      "sd_cv_auroc": 0.017116666713975652,
+      "mean_cv_average_precision": 0.7475109648264211
+    },
+    "SVM (RBF)": {
+      "fold_auroc": [
+        0.7169152474580552,
+        0.720503923921503,
+        0.7002416332717897,
+        0.7423479661699557
+      ],
+      "fold_average_precision": [
+        0.7310911590941008,
+        0.7718538035630249,
+        0.7243570662451809,
+        0.7921077952485114
+      ],
+      "cv_fit_seconds": 13.525176900000588,
+      "warnings": {},
+      "mean_cv_auroc": 0.720002192705326,
+      "sd_cv_auroc": 0.01731660345864438,
+      "mean_cv_average_precision": 0.7548524560377046
+    },
+    "Nearest neighbours": {
+      "fold_auroc": [
+        0.7085894575079468,
+        0.7120762521355994,
+        0.69259956997734,
+        0.7189871518482543
+      ],
+      "fold_average_precision": [
+        0.7334559347784008,
+        0.7647699481165575,
+        0.726412738334503,
+        0.7845693427070748
+      ],
+      "cv_fit_seconds": 0.009941000002072542,
+      "warnings": {},
+      "mean_cv_auroc": 0.7080631078672851,
+      "sd_cv_auroc": 0.011177926340701546,
+      "mean_cv_average_precision": 0.752301990984134
+    },
+    "Gaussian naive Bayes": {
+      "fold_auroc": [
+        0.6896959139422774,
+        0.6820228272699367,
+        0.67681275848731,
+        0.7076453215196671
+      ],
+      "fold_average_precision": [
+        0.7051979223004943,
+        0.7273117134068009,
+        0.6984165216670697,
+        0.7610764708464047
+      ],
+      "cv_fit_seconds": 0.04851130000133708,
+      "warnings": {},
+      "mean_cv_auroc": 0.6890442053047978,
+      "sd_cv_auroc": 0.013482510762029205,
+      "mean_cv_average_precision": 0.7230006570551923
+    },
+    "Neural network (MLP)": {
+      "fold_auroc": [
+        0.7294960318295687,
+        0.7289083405424344,
+        0.6922198158074826,
+        0.7422196425892145
+      ],
+      "fold_average_precision": [
+        0.7489866245680943,
+        0.7786091949560312,
+        0.7219218865158059,
+        0.7965653090389035
+      ],
+      "cv_fit_seconds": 43.81472020000001,
+      "warnings": {},
+      "mean_cv_auroc": 0.723210957692175,
+      "sd_cv_auroc": 0.02155414349250925,
+      "mean_cv_average_precision": 0.7615207537697087
+    },
+    "XGBoost": {
+      "fold_auroc": [
+        0.7290486916615793,
+        0.7314710597223644,
+        0.698857292297959,
+        0.7481916246160164
+      ],
+      "fold_average_precision": [
+        0.7607340064285505,
+        0.7836777850974954,
+        0.7405348631306368,
+        0.8067812654225465
+      ],
+      "cv_fit_seconds": 3.5855160000010073,
+      "warnings": {},
+      "mean_cv_auroc": 0.7268921670744798,
+      "sd_cv_auroc": 0.020536454996538375,
+      "mean_cv_average_precision": 0.7729319800198072
+    },
+    "LightGBM": {
+      "fold_auroc": [
+        0.7327668778813969,
+        0.7333578287737705,
+        0.696228375544771,
+        0.7465214438574463
+      ],
+      "fold_average_precision": [
+        0.7615731977964109,
+        0.7876020637293821,
+        0.7381657356475017,
+        0.8043524048478516
+      ],
+      "cv_fit_seconds": 2.487832200000412,
+      "warnings": {},
+      "mean_cv_auroc": 0.7272186315143462,
+      "sd_cv_auroc": 0.021613786573638168,
+      "mean_cv_average_precision": 0.7729233505052866
+    },
+    "CatBoost": {
+      "fold_auroc": [
+        0.7302091446855988,
+        0.7366197532471963,
+        0.7014223946906453,
+        0.7495281640646594
+      ],
+      "fold_average_precision": [
+        0.7551348435305597,
+        0.781459969404572,
+        0.7405024165356165,
+        0.8075307950440694
+      ],
+      "cv_fit_seconds": 12.561007400001472,
+      "warnings": {},
+      "mean_cv_auroc": 0.729444864172025,
+      "sd_cv_auroc": 0.020336018033338354,
+      "mean_cv_average_precision": 0.7711570061287044
+    }
+  },
+  "models": {
+    "Random forest (active configuration)": {
+      "threshold": 0.65,
+      "cutoff_partition": {
+        "roc_auc": 0.7075998677695886,
+        "average_precision": 0.7794439576666168,
+        "accuracy": 0.6641438032166509,
+        "balanced_accuracy": 0.6697545472986679,
+        "sensitivity": 0.6438569206842923,
+        "specificity": 0.6956521739130435,
+        "precision": 0.7666666666666667,
+        "negative_predictive_value": 0.5570599613152805,
+        "brier_score": 0.20919835777864682,
+        "confusion_matrix": {
+          "tn": 288,
+          "fp": 126,
+          "fn": 229,
+          "tp": 414
+        },
+        "f1": 0.6999154691462384
+      },
+      "fit_seconds": 2.7612737999988894,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 1.2736580986030466,
+        "intercept": 0.4896571441775474
+      },
+      "legacy_test": {
+        "roc_auc": 0.7437532216046029,
+        "average_precision": 0.801992194942087,
+        "accuracy": 0.6894767107533065,
+        "balanced_accuracy": 0.6857434418578732,
+        "sensitivity": 0.7023474178403756,
+        "specificity": 0.6691394658753709,
+        "precision": 0.7703398558187435,
+        "negative_predictive_value": 0.5872395833333334,
+        "brier_score": 0.19582159550254996,
+        "confusion_matrix": {
+          "tn": 451,
+          "fp": 223,
+          "fn": 317,
+          "tp": 748
+        },
+        "f1": 0.7347740667976425
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 2,
+          "mean_probability": 0.18851757071490885,
+          "observed_rate": 0.5
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 119,
+          "mean_probability": 0.2720001424080282,
+          "observed_rate": 0.21008403361344538
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 232,
+          "mean_probability": 0.3425799319951331,
+          "observed_rate": 0.33620689655172414
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 145,
+          "mean_probability": 0.44798226785543654,
+          "observed_rate": 0.3793103448275862
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 170,
+          "mean_probability": 0.5492772243364482,
+          "observed_rate": 0.5764705882352941
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 238,
+          "mean_probability": 0.6545426931592639,
+          "observed_rate": 0.6470588235294118
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 406,
+          "mean_probability": 0.7552961394621305,
+          "observed_rate": 0.7216748768472906
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 349,
+          "mean_probability": 0.8401641398630678,
+          "observed_rate": 0.830945558739255
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 78,
+          "mean_probability": 0.9276860116063201,
+          "observed_rate": 0.9102564102564102
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6495041678643287,
+            "average_precision": 0.842010751538161,
+            "accuracy": 0.675392670157068,
+            "balanced_accuracy": 0.541103765449842,
+            "sensitivity": 0.8169014084507042,
+            "specificity": 0.2653061224489796,
+            "precision": 0.7631578947368421,
+            "negative_predictive_value": 0.3333333333333333,
+            "brier_score": 0.18096053908527718,
+            "confusion_matrix": {
+              "tn": 26,
+              "fp": 72,
+              "fn": 52,
+              "tp": 232
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6687106210621062,
+            "average_precision": 0.8007521799036371,
+            "accuracy": 0.6827586206896552,
+            "balanced_accuracy": 0.644014401440144,
+            "sensitivity": 0.7425742574257426,
+            "specificity": 0.5454545454545454,
+            "precision": 0.7894736842105263,
+            "negative_predictive_value": 0.48,
+            "brier_score": 0.19405290886651566,
+            "confusion_matrix": {
+              "tn": 48,
+              "fp": 40,
+              "fn": 52,
+              "tp": 150
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7531834848098757,
+            "average_precision": 0.7732756909454203,
+            "accuracy": 0.6963448922211809,
+            "balanced_accuracy": 0.7023326679690818,
+            "sensitivity": 0.6321243523316062,
+            "specificity": 0.7725409836065574,
+            "precision": 0.7672955974842768,
+            "negative_predictive_value": 0.6389830508474577,
+            "brier_score": 0.20162276014720615,
+            "confusion_matrix": {
+              "tn": 377,
+              "fp": 111,
+              "fn": 213,
+              "tp": 366
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7342317348732113,
+            "average_precision": 0.7389462630028933,
+            "accuracy": 0.6619385342789598,
+            "balanced_accuracy": 0.6721930705498368,
+            "sensitivity": 0.5728571428571428,
+            "specificity": 0.7715289982425307,
+            "precision": 0.7551789077212806,
+            "negative_predictive_value": 0.5948509485094851,
+            "brier_score": 0.20742377078373106,
+            "confusion_matrix": {
+              "tn": 439,
+              "fp": 130,
+              "fn": 299,
+              "tp": 401
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6606100217864924,
+            "average_precision": 0.8876761523939347,
+            "accuracy": 0.7847769028871391,
+            "balanced_accuracy": 0.543921568627451,
+            "sensitivity": 0.9411764705882353,
+            "specificity": 0.14666666666666667,
+            "precision": 0.8181818181818182,
+            "negative_predictive_value": 0.3793103448275862,
+            "brier_score": 0.15047097193241352,
+            "confusion_matrix": {
+              "tn": 11,
+              "fp": 64,
+              "fn": 18,
+              "tp": 288
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6801426872770512,
+            "average_precision": 0.8140773557709426,
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.5,
+            "sensitivity": 1.0,
+            "specificity": 0.0,
+            "precision": 0.6666666666666666,
+            "negative_predictive_value": null,
+            "brier_score": 0.22668803301326687,
+            "confusion_matrix": {
+              "tn": 0,
+              "fp": 29,
+              "fn": 0,
+              "tp": 58
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7591302544964494,
+            "average_precision": 0.8248252304568977,
+            "accuracy": 0.6918798665183538,
+            "balanced_accuracy": 0.693401751930752,
+            "sensitivity": 0.6862385321100918,
+            "specificity": 0.7005649717514124,
+            "precision": 0.7791666666666667,
+            "negative_predictive_value": 0.5918854415274463,
+            "brier_score": 0.1932546028908651,
+            "confusion_matrix": {
+              "tn": 248,
+              "fp": 106,
+              "fn": 171,
+              "tp": 374
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7273828124999999,
+            "average_precision": 0.7831277239271898,
+            "accuracy": 0.6869047619047619,
+            "balanced_accuracy": 0.6768028846153846,
+            "sensitivity": 0.7192307692307692,
+            "specificity": 0.634375,
+            "precision": 0.7617107942973523,
+            "negative_predictive_value": 0.5816618911174785,
+            "brier_score": 0.1985688887857698,
+            "confusion_matrix": {
+              "tn": 203,
+              "fp": 117,
+              "fn": 146,
+              "tp": 374
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7407864141729561,
+            "average_precision": 0.7462369077918881,
+            "accuracy": 0.6613508442776735,
+            "balanced_accuracy": 0.6701298105591487,
+            "sensitivity": 0.49016100178890876,
+            "specificity": 0.8500986193293886,
+            "precision": 0.7828571428571428,
+            "negative_predictive_value": 0.6019553072625698,
+            "brier_score": 0.20661893731213676,
+            "confusion_matrix": {
+              "tn": 431,
+              "fp": 76,
+              "fn": 285,
+              "tp": 274
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.650150292300774,
+            "average_precision": 0.8449869352786179,
+            "accuracy": 0.7340267459138187,
+            "balanced_accuracy": 0.5282596861612743,
+            "sensitivity": 0.9367588932806324,
+            "specificity": 0.11976047904191617,
+            "precision": 0.7632850241545893,
+            "negative_predictive_value": 0.38461538461538464,
+            "brier_score": 0.17871911947131738,
+            "confusion_matrix": {
+              "tn": 20,
+              "fp": 147,
+              "fn": 32,
+              "tp": 474
+            }
+          }
+        }
+      ]
+    },
+    "CatBoost": {
+      "threshold": 0.64,
+      "cutoff_partition": {
+        "roc_auc": 0.7089897897085673,
+        "average_precision": 0.7752178952804184,
+        "accuracy": 0.6613055818353831,
+        "balanced_accuracy": 0.6682819813525067,
+        "sensitivity": 0.6360808709175739,
+        "specificity": 0.7004830917874396,
+        "precision": 0.7673545966228893,
+        "negative_predictive_value": 0.5534351145038168,
+        "brier_score": 0.2085926341512298,
+        "confusion_matrix": {
+          "tn": 290,
+          "fp": 124,
+          "fn": 234,
+          "tp": 409
+        },
+        "f1": 0.6955782312925171
+      },
+      "fit_seconds": 3.172309799998402,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 0.9062747012044449,
+        "intercept": 0.49423633697546365
+      },
+      "legacy_test": {
+        "roc_auc": 0.7455106504506763,
+        "average_precision": 0.8106475606269744,
+        "accuracy": 0.682576193214491,
+        "balanced_accuracy": 0.6806543514300442,
+        "sensitivity": 0.6892018779342723,
+        "specificity": 0.672106824925816,
+        "precision": 0.768586387434555,
+        "negative_predictive_value": 0.5778061224489796,
+        "brier_score": 0.19574293827345704,
+        "confusion_matrix": {
+          "tn": 453,
+          "fp": 221,
+          "fn": 331,
+          "tp": 734
+        },
+        "f1": 0.7267326732673267
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 7,
+          "mean_probability": 0.17806757908045662,
+          "observed_rate": 0.14285714285714285
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 77,
+          "mean_probability": 0.26979254127744995,
+          "observed_rate": 0.19480519480519481
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 221,
+          "mean_probability": 0.35663012137274885,
+          "observed_rate": 0.334841628959276
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 180,
+          "mean_probability": 0.44754186607858937,
+          "observed_rate": 0.40555555555555556
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 201,
+          "mean_probability": 0.5529824123266528,
+          "observed_rate": 0.5223880597014925
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 266,
+          "mean_probability": 0.6501966257219061,
+          "observed_rate": 0.6428571428571429
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 391,
+          "mean_probability": 0.7512579779785858,
+          "observed_rate": 0.7442455242966752
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 327,
+          "mean_probability": 0.8456091763609576,
+          "observed_rate": 0.8256880733944955
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 69,
+          "mean_probability": 0.9241783359237483,
+          "observed_rate": 0.9420289855072463
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6645587812589825,
+            "average_precision": 0.8583861489383646,
+            "accuracy": 0.7094240837696335,
+            "balanced_accuracy": 0.5773569991376832,
+            "sensitivity": 0.8485915492957746,
+            "specificity": 0.30612244897959184,
+            "precision": 0.7799352750809061,
+            "negative_predictive_value": 0.410958904109589,
+            "brier_score": 0.17711479328093255,
+            "confusion_matrix": {
+              "tn": 30,
+              "fp": 68,
+              "fn": 43,
+              "tp": 241
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6657290729072907,
+            "average_precision": 0.7907635018232247,
+            "accuracy": 0.6620689655172414,
+            "balanced_accuracy": 0.6291629162916291,
+            "sensitivity": 0.7128712871287128,
+            "specificity": 0.5454545454545454,
+            "precision": 0.782608695652174,
+            "negative_predictive_value": 0.4528301886792453,
+            "brier_score": 0.19726827379763923,
+            "confusion_matrix": {
+              "tn": 48,
+              "fp": 40,
+              "fn": 58,
+              "tp": 144
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7553512273846938,
+            "average_precision": 0.7841850864046391,
+            "accuracy": 0.6785379568884724,
+            "balanced_accuracy": 0.6856030040488122,
+            "sensitivity": 0.6027633851468048,
+            "specificity": 0.7684426229508197,
+            "precision": 0.7554112554112554,
+            "negative_predictive_value": 0.6198347107438017,
+            "brier_score": 0.2019974875566168,
+            "confusion_matrix": {
+              "tn": 375,
+              "fp": 113,
+              "fn": 230,
+              "tp": 349
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.731041928194828,
+            "average_precision": 0.7493015374555758,
+            "accuracy": 0.6564223798266351,
+            "balanced_accuracy": 0.6665352749184033,
+            "sensitivity": 0.5685714285714286,
+            "specificity": 0.7644991212653779,
+            "precision": 0.7481203007518797,
+            "negative_predictive_value": 0.5902306648575305,
+            "brier_score": 0.2085829246830464,
+            "confusion_matrix": {
+              "tn": 435,
+              "fp": 134,
+              "fn": 302,
+              "tp": 398
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6817429193899782,
+            "average_precision": 0.8978673559935767,
+            "accuracy": 0.7795275590551181,
+            "balanced_accuracy": 0.5557516339869282,
+            "sensitivity": 0.9248366013071896,
+            "specificity": 0.18666666666666668,
+            "precision": 0.8226744186046512,
+            "negative_predictive_value": 0.3783783783783784,
+            "brier_score": 0.14816185816758812,
+            "confusion_matrix": {
+              "tn": 14,
+              "fp": 61,
+              "fn": 23,
+              "tp": 283
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6837098692033294,
+            "average_precision": 0.8103711242396379,
+            "accuracy": 0.632183908045977,
+            "balanced_accuracy": 0.5,
+            "sensitivity": 0.896551724137931,
+            "specificity": 0.10344827586206896,
+            "precision": 0.6666666666666666,
+            "negative_predictive_value": 0.3333333333333333,
+            "brier_score": 0.21918441983547163,
+            "confusion_matrix": {
+              "tn": 3,
+              "fp": 26,
+              "fn": 6,
+              "tp": 52
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7492225159384234,
+            "average_precision": 0.8189644532410963,
+            "accuracy": 0.6796440489432704,
+            "balanced_accuracy": 0.6843000051832271,
+            "sensitivity": 0.6623853211009174,
+            "specificity": 0.7062146892655368,
+            "precision": 0.7763440860215054,
+            "negative_predictive_value": 0.576036866359447,
+            "brier_score": 0.1959194027754821,
+            "confusion_matrix": {
+              "tn": 250,
+              "fp": 104,
+              "fn": 184,
+              "tp": 361
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7407662259615385,
+            "average_precision": 0.8051837314241285,
+            "accuracy": 0.6857142857142857,
+            "balanced_accuracy": 0.6758413461538462,
+            "sensitivity": 0.7173076923076923,
+            "specificity": 0.634375,
+            "precision": 0.7612244897959184,
+            "negative_predictive_value": 0.58,
+            "brier_score": 0.19555407924093252,
+            "confusion_matrix": {
+              "tn": 203,
+              "fp": 117,
+              "fn": 147,
+              "tp": 373
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7402941996309274,
+            "average_precision": 0.7448369096240786,
+            "accuracy": 0.6585365853658537,
+            "balanced_accuracy": 0.6663455804779597,
+            "sensitivity": 0.5062611806797853,
+            "specificity": 0.8264299802761341,
+            "precision": 0.7628032345013477,
+            "negative_predictive_value": 0.6028776978417266,
+            "brier_score": 0.20765590776500006,
+            "confusion_matrix": {
+              "tn": 419,
+              "fp": 88,
+              "fn": 276,
+              "tp": 283
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6551324229012332,
+            "average_precision": 0.8596640488521187,
+            "accuracy": 0.7206537890044576,
+            "balanced_accuracy": 0.5474485810986722,
+            "sensitivity": 0.8913043478260869,
+            "specificity": 0.20359281437125748,
+            "precision": 0.7722602739726028,
+            "negative_predictive_value": 0.38202247191011235,
+            "brier_score": 0.17687336104019571,
+            "confusion_matrix": {
+              "tn": 34,
+              "fp": 133,
+              "fn": 55,
+              "tp": 451
+            }
+          }
+        }
+      ]
+    },
+    "Gradient boosting": {
+      "threshold": 0.53,
+      "cutoff_partition": {
+        "roc_auc": 0.7047617974320253,
+        "average_precision": 0.7763418847931212,
+        "accuracy": 0.6830652790917692,
+        "balanced_accuracy": 0.659499177316474,
+        "sensitivity": 0.7682737169517885,
+        "specificity": 0.5507246376811594,
+        "precision": 0.7264705882352941,
+        "negative_predictive_value": 0.6047745358090185,
+        "brier_score": 0.20998346638280396,
+        "confusion_matrix": {
+          "tn": 228,
+          "fp": 186,
+          "fn": 149,
+          "tp": 494
+        },
+        "f1": 0.7467876039304611
+      },
+      "fit_seconds": 8.128726499999175,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 1.0539061943216748,
+        "intercept": 0.1903506824243087
+      },
+      "legacy_test": {
+        "roc_auc": 0.7465408673604434,
+        "average_precision": 0.8093300628119232,
+        "accuracy": 0.7055779183438758,
+        "balanced_accuracy": 0.6727427870885053,
+        "sensitivity": 0.8187793427230047,
+        "specificity": 0.526706231454006,
+        "precision": 0.7321578505457599,
+        "negative_predictive_value": 0.6478102189781022,
+        "brier_score": 0.19487236135797825,
+        "confusion_matrix": {
+          "tn": 355,
+          "fp": 319,
+          "fn": 193,
+          "tp": 872
+        },
+        "f1": 0.7730496453900709
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 8,
+          "mean_probability": 0.18136975325556876,
+          "observed_rate": 0.125
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 76,
+          "mean_probability": 0.2592340716413704,
+          "observed_rate": 0.19736842105263158
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 231,
+          "mean_probability": 0.35407667521721964,
+          "observed_rate": 0.329004329004329
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 185,
+          "mean_probability": 0.4486088860032937,
+          "observed_rate": 0.3945945945945946
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 173,
+          "mean_probability": 0.5524417823221479,
+          "observed_rate": 0.4913294797687861
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 241,
+          "mean_probability": 0.6486895435185305,
+          "observed_rate": 0.6846473029045643
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 420,
+          "mean_probability": 0.75344529679463,
+          "observed_rate": 0.7333333333333333
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 332,
+          "mean_probability": 0.8436169907875858,
+          "observed_rate": 0.8253012048192772
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 73,
+          "mean_probability": 0.9194880244659911,
+          "observed_rate": 0.9315068493150684
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.658091405576315,
+            "average_precision": 0.8511563517657905,
+            "accuracy": 0.743455497382199,
+            "balanced_accuracy": 0.5334147743604485,
+            "sensitivity": 0.9647887323943662,
+            "specificity": 0.10204081632653061,
+            "precision": 0.7569060773480663,
+            "negative_predictive_value": 0.5,
+            "brier_score": 0.17864630320154384,
+            "confusion_matrix": {
+              "tn": 10,
+              "fp": 88,
+              "fn": 10,
+              "tp": 274
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.663422592259226,
+            "average_precision": 0.7966497347544029,
+            "accuracy": 0.7034482758620689,
+            "balanced_accuracy": 0.6011476147614762,
+            "sensitivity": 0.8613861386138614,
+            "specificity": 0.3409090909090909,
+            "precision": 0.75,
+            "negative_predictive_value": 0.5172413793103449,
+            "brier_score": 0.19599844452573117,
+            "confusion_matrix": {
+              "tn": 30,
+              "fp": 58,
+              "fn": 28,
+              "tp": 174
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7575755967043234,
+            "average_precision": 0.783551248137428,
+            "accuracy": 0.6925960637300843,
+            "balanced_accuracy": 0.688894433590985,
+            "sensitivity": 0.7322970639032815,
+            "specificity": 0.6454918032786885,
+            "precision": 0.7102177554438861,
+            "negative_predictive_value": 0.6702127659574468,
+            "brier_score": 0.200375444860424,
+            "confusion_matrix": {
+              "tn": 315,
+              "fp": 173,
+              "fn": 155,
+              "tp": 424
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7372922420286216,
+            "average_precision": 0.7546850323249219,
+            "accuracy": 0.677698975571316,
+            "balanced_accuracy": 0.6716783831282953,
+            "sensitivity": 0.73,
+            "specificity": 0.6133567662565905,
+            "precision": 0.6990424076607387,
+            "negative_predictive_value": 0.6486988847583643,
+            "brier_score": 0.20624518407325929,
+            "confusion_matrix": {
+              "tn": 349,
+              "fp": 220,
+              "fn": 189,
+              "tp": 511
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6516775599128539,
+            "average_precision": 0.8856118066869448,
+            "accuracy": 0.8057742782152231,
+            "balanced_accuracy": 0.526797385620915,
+            "sensitivity": 0.9869281045751634,
+            "specificity": 0.06666666666666667,
+            "precision": 0.8118279569892473,
+            "negative_predictive_value": 0.5555555555555556,
+            "brier_score": 0.1512626804416793,
+            "confusion_matrix": {
+              "tn": 5,
+              "fp": 70,
+              "fn": 4,
+              "tp": 302
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6777645659928656,
+            "average_precision": 0.8323114830847257,
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.5,
+            "sensitivity": 1.0,
+            "specificity": 0.0,
+            "precision": 0.6666666666666666,
+            "negative_predictive_value": null,
+            "brier_score": 0.22083372475850455,
+            "confusion_matrix": {
+              "tn": 0,
+              "fp": 29,
+              "fn": 0,
+              "tp": 58
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7525138651324315,
+            "average_precision": 0.818547319720835,
+            "accuracy": 0.7041156840934372,
+            "balanced_accuracy": 0.6777535893847509,
+            "sensitivity": 0.8018348623853211,
+            "specificity": 0.5536723163841808,
+            "precision": 0.7344537815126051,
+            "negative_predictive_value": 0.6447368421052632,
+            "brier_score": 0.19459106716639785,
+            "confusion_matrix": {
+              "tn": 196,
+              "fp": 158,
+              "fn": 108,
+              "tp": 437
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7393088942307693,
+            "average_precision": 0.8022824776994043,
+            "accuracy": 0.7071428571428572,
+            "balanced_accuracy": 0.6667067307692308,
+            "sensitivity": 0.8365384615384616,
+            "specificity": 0.496875,
+            "precision": 0.7298657718120806,
+            "negative_predictive_value": 0.6516393442622951,
+            "brier_score": 0.1951734131177768,
+            "confusion_matrix": {
+              "tn": 159,
+              "fp": 161,
+              "fn": 85,
+              "tp": 435
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.742924636484565,
+            "average_precision": 0.7466625271455212,
+            "accuracy": 0.6744840525328331,
+            "balanced_accuracy": 0.6746708866565754,
+            "sensitivity": 0.6708407871198568,
+            "specificity": 0.6785009861932939,
+            "precision": 0.6970260223048327,
+            "negative_predictive_value": 0.6515151515151515,
+            "brier_score": 0.2061919543821871,
+            "confusion_matrix": {
+              "tn": 344,
+              "fp": 163,
+              "fn": 184,
+              "tp": 375
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6530377979219426,
+            "average_precision": 0.8560308512702515,
+            "accuracy": 0.7548291233283804,
+            "balanced_accuracy": 0.5240408511041159,
+            "sensitivity": 0.9822134387351779,
+            "specificity": 0.0658682634730539,
+            "precision": 0.7611026033690659,
+            "negative_predictive_value": 0.55,
+            "brier_score": 0.17694266423493718,
+            "confusion_matrix": {
+              "tn": 11,
+              "fp": 156,
+              "fn": 9,
+              "tp": 497
+            }
+          }
+        }
+      ]
+    },
+    "LightGBM": {
+      "threshold": 0.64,
+      "cutoff_partition": {
+        "roc_auc": 0.7167357871090374,
+        "average_precision": 0.7855055980274985,
+        "accuracy": 0.6660359508041628,
+        "balanced_accuracy": 0.6734603797116476,
+        "sensitivity": 0.6391912908242613,
+        "specificity": 0.7077294685990339,
+        "precision": 0.7725563909774437,
+        "negative_predictive_value": 0.5580952380952381,
+        "brier_score": 0.20609229738073276,
+        "confusion_matrix": {
+          "tn": 293,
+          "fp": 121,
+          "fn": 232,
+          "tp": 411
+        },
+        "f1": 0.6995744680851064
+      },
+      "fit_seconds": 0.6250550000004296,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 0.7884146375005843,
+        "intercept": 0.4422228992842562
+      },
+      "legacy_test": {
+        "roc_auc": 0.7408088491383513,
+        "average_precision": 0.801378810319078,
+        "accuracy": 0.6814261069580219,
+        "balanced_accuracy": 0.6810771652665748,
+        "sensitivity": 0.6826291079812207,
+        "specificity": 0.6795252225519288,
+        "precision": 0.7709437963944857,
+        "negative_predictive_value": 0.5753768844221105,
+        "brier_score": 0.19745084327177984,
+        "confusion_matrix": {
+          "tn": 458,
+          "fp": 216,
+          "fn": 338,
+          "tp": 727
+        },
+        "f1": 0.7241035856573705
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 3,
+          "mean_probability": 0.18726272192809967,
+          "observed_rate": 0.3333333333333333
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 60,
+          "mean_probability": 0.2612941249326338,
+          "observed_rate": 0.18333333333333332
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 213,
+          "mean_probability": 0.3500798422632875,
+          "observed_rate": 0.30985915492957744
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 200,
+          "mean_probability": 0.4469202274293717,
+          "observed_rate": 0.41
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 217,
+          "mean_probability": 0.5529019550112357,
+          "observed_rate": 0.5299539170506913
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 298,
+          "mean_probability": 0.6533171460546001,
+          "observed_rate": 0.6476510067114094
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 401,
+          "mean_probability": 0.7511770136641249,
+          "observed_rate": 0.7581047381546134
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 302,
+          "mean_probability": 0.8438734680191861,
+          "observed_rate": 0.8311258278145696
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 45,
+          "mean_probability": 0.9192333798328718,
+          "observed_rate": 0.9333333333333333
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6603909169301523,
+            "average_precision": 0.8542500742241663,
+            "accuracy": 0.7094240837696335,
+            "balanced_accuracy": 0.5806984765737281,
+            "sensitivity": 0.8450704225352113,
+            "specificity": 0.3163265306122449,
+            "precision": 0.7817589576547231,
+            "negative_predictive_value": 0.41333333333333333,
+            "brier_score": 0.17906066912641064,
+            "confusion_matrix": {
+              "tn": 31,
+              "fp": 67,
+              "fn": 44,
+              "tp": 240
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6502025202520253,
+            "average_precision": 0.7778365201931225,
+            "accuracy": 0.6448275862068965,
+            "balanced_accuracy": 0.613580108010801,
+            "sensitivity": 0.693069306930693,
+            "specificity": 0.5340909090909091,
+            "precision": 0.7734806629834254,
+            "negative_predictive_value": 0.43119266055045874,
+            "brier_score": 0.20018838014852394,
+            "confusion_matrix": {
+              "tn": 47,
+              "fp": 41,
+              "fn": 62,
+              "tp": 140
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7517271157167531,
+            "average_precision": 0.7713539820894555,
+            "accuracy": 0.6813495782567948,
+            "balanced_accuracy": 0.6889988391517313,
+            "sensitivity": 0.5993091537132987,
+            "specificity": 0.7786885245901639,
+            "precision": 0.7626373626373626,
+            "negative_predictive_value": 0.6209150326797386,
+            "brier_score": 0.20329073158412778,
+            "confusion_matrix": {
+              "tn": 380,
+              "fp": 108,
+              "fn": 232,
+              "tp": 347
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7311197589756464,
+            "average_precision": 0.7515542601952236,
+            "accuracy": 0.6627265563435776,
+            "balanced_accuracy": 0.6729073562641226,
+            "sensitivity": 0.5742857142857143,
+            "specificity": 0.7715289982425307,
+            "precision": 0.7556390977443609,
+            "negative_predictive_value": 0.5956580732700135,
+            "brier_score": 0.20903312606591887,
+            "confusion_matrix": {
+              "tn": 439,
+              "fp": 130,
+              "fn": 298,
+              "tp": 402
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6374291938997821,
+            "average_precision": 0.872122056409385,
+            "accuracy": 0.7454068241469817,
+            "balanced_accuracy": 0.5345098039215687,
+            "sensitivity": 0.8823529411764706,
+            "specificity": 0.18666666666666668,
+            "precision": 0.8157099697885196,
+            "negative_predictive_value": 0.28,
+            "brier_score": 0.1542681733170434,
+            "confusion_matrix": {
+              "tn": 14,
+              "fp": 61,
+              "fn": 36,
+              "tp": 270
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6700356718192629,
+            "average_precision": 0.7996026110785401,
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.5344827586206896,
+            "sensitivity": 0.9310344827586207,
+            "specificity": 0.13793103448275862,
+            "precision": 0.6835443037974683,
+            "negative_predictive_value": 0.5,
+            "brier_score": 0.21933292485691183,
+            "confusion_matrix": {
+              "tn": 4,
+              "fp": 25,
+              "fn": 4,
+              "tp": 54
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7460348312859586,
+            "average_precision": 0.8107254464725253,
+            "accuracy": 0.6740823136818688,
+            "balanced_accuracy": 0.6802078474057949,
+            "sensitivity": 0.6513761467889908,
+            "specificity": 0.7090395480225988,
+            "precision": 0.7751091703056768,
+            "negative_predictive_value": 0.5691609977324263,
+            "brier_score": 0.19753667392932744,
+            "confusion_matrix": {
+              "tn": 251,
+              "fp": 103,
+              "fn": 190,
+              "tp": 355
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7351592548076922,
+            "average_precision": 0.7956816255441013,
+            "accuracy": 0.6892857142857143,
+            "balanced_accuracy": 0.6811298076923077,
+            "sensitivity": 0.7153846153846154,
+            "specificity": 0.646875,
+            "precision": 0.7670103092783506,
+            "negative_predictive_value": 0.5830985915492958,
+            "brier_score": 0.197358984032333,
+            "confusion_matrix": {
+              "tn": 207,
+              "fp": 113,
+              "fn": 148,
+              "tp": 372
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7403929953812988,
+            "average_precision": 0.7485309518176171,
+            "accuracy": 0.6651031894934334,
+            "balanced_accuracy": 0.6726985000688042,
+            "sensitivity": 0.516994633273703,
+            "specificity": 0.8284023668639053,
+            "precision": 0.7686170212765957,
+            "negative_predictive_value": 0.6086956521739131,
+            "brier_score": 0.20810499397654786,
+            "confusion_matrix": {
+              "tn": 420,
+              "fp": 87,
+              "fn": 270,
+              "tp": 289
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6305649570424369,
+            "average_precision": 0.8397995127358291,
+            "accuracy": 0.7072808320950966,
+            "balanced_accuracy": 0.5465787792004922,
+            "sensitivity": 0.8656126482213439,
+            "specificity": 0.2275449101796407,
+            "precision": 0.7724867724867724,
+            "negative_predictive_value": 0.3584905660377358,
+            "brier_score": 0.18057517514208782,
+            "confusion_matrix": {
+              "tn": 38,
+              "fp": 129,
+              "fn": 68,
+              "tp": 438
+            }
+          }
+        }
+      ]
+    },
+    "XGBoost": {
+      "threshold": 0.62,
+      "cutoff_partition": {
+        "roc_auc": 0.7085991089473407,
+        "average_precision": 0.7807806931806414,
+        "accuracy": 0.6622516556291391,
+        "balanced_accuracy": 0.6621775944583437,
+        "sensitivity": 0.6625194401244168,
+        "specificity": 0.6618357487922706,
+        "precision": 0.7526501766784452,
+        "negative_predictive_value": 0.5580448065173116,
+        "brier_score": 0.20846775733775086,
+        "confusion_matrix": {
+          "tn": 274,
+          "fp": 140,
+          "fn": 217,
+          "tp": 426
+        },
+        "f1": 0.7047146401985112
+      },
+      "fit_seconds": 0.8935940000010305,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 0.8044760616495688,
+        "intercept": 0.22491356582899427
+      },
+      "legacy_test": {
+        "roc_auc": 0.7426428999317369,
+        "average_precision": 0.8076532173189075,
+        "accuracy": 0.6883266244968372,
+        "balanced_accuracy": 0.6818085565818253,
+        "sensitivity": 0.7107981220657277,
+        "specificity": 0.6528189910979229,
+        "precision": 0.763874873864783,
+        "negative_predictive_value": 0.5882352941176471,
+        "brier_score": 0.1973835497179032,
+        "confusion_matrix": {
+          "tn": 440,
+          "fp": 234,
+          "fn": 308,
+          "tp": 757
+        },
+        "f1": 0.7363813229571985
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 5,
+          "mean_probability": 0.18082688295509936,
+          "observed_rate": 0.4
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 54,
+          "mean_probability": 0.2621585782456411,
+          "observed_rate": 0.25925925925925924
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 204,
+          "mean_probability": 0.3555809176756995,
+          "observed_rate": 0.24509803921568626
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 209,
+          "mean_probability": 0.450102152694879,
+          "observed_rate": 0.430622009569378
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 212,
+          "mean_probability": 0.5502211745671914,
+          "observed_rate": 0.5660377358490566
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 313,
+          "mean_probability": 0.6523860924952355,
+          "observed_rate": 0.6293929712460063
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 409,
+          "mean_probability": 0.7501694405256097,
+          "observed_rate": 0.7481662591687042
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 286,
+          "mean_probability": 0.8431881310199418,
+          "observed_rate": 0.8391608391608392
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 47,
+          "mean_probability": 0.923158924812835,
+          "observed_rate": 0.9787234042553191
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6593489508479449,
+            "average_precision": 0.8521913785419164,
+            "accuracy": 0.7146596858638743,
+            "balanced_accuracy": 0.5608292612819776,
+            "sensitivity": 0.8767605633802817,
+            "specificity": 0.24489795918367346,
+            "precision": 0.7708978328173375,
+            "negative_predictive_value": 0.4067796610169492,
+            "brier_score": 0.17960807998590234,
+            "confusion_matrix": {
+              "tn": 24,
+              "fp": 74,
+              "fn": 35,
+              "tp": 249
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6644914491449145,
+            "average_precision": 0.7979739519955853,
+            "accuracy": 0.6586206896551724,
+            "balanced_accuracy": 0.6234810981098109,
+            "sensitivity": 0.7128712871287128,
+            "specificity": 0.5340909090909091,
+            "precision": 0.7783783783783784,
+            "negative_predictive_value": 0.44761904761904764,
+            "brier_score": 0.19608781161979336,
+            "confusion_matrix": {
+              "tn": 47,
+              "fp": 41,
+              "fn": 58,
+              "tp": 144
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7518138254197457,
+            "average_precision": 0.7795760388989695,
+            "accuracy": 0.6869728209934396,
+            "balanced_accuracy": 0.6924088309408534,
+            "sensitivity": 0.6286701208981001,
+            "specificity": 0.7561475409836066,
+            "precision": 0.7536231884057971,
+            "negative_predictive_value": 0.6318493150684932,
+            "brier_score": 0.20409956985480682,
+            "confusion_matrix": {
+              "tn": 369,
+              "fp": 119,
+              "fn": 215,
+              "tp": 364
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7275357770524731,
+            "average_precision": 0.749995558757651,
+            "accuracy": 0.6690307328605201,
+            "balanced_accuracy": 0.6754971127290987,
+            "sensitivity": 0.6128571428571429,
+            "specificity": 0.7381370826010545,
+            "precision": 0.7422145328719724,
+            "negative_predictive_value": 0.6078147612156295,
+            "brier_score": 0.21052942877435452,
+            "confusion_matrix": {
+              "tn": 420,
+              "fp": 149,
+              "fn": 271,
+              "tp": 429
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6733769063180829,
+            "average_precision": 0.8904435099374268,
+            "accuracy": 0.7559055118110236,
+            "balanced_accuracy": 0.5460784313725491,
+            "sensitivity": 0.8921568627450981,
+            "specificity": 0.2,
+            "precision": 0.8198198198198198,
+            "negative_predictive_value": 0.3125,
+            "brier_score": 0.1497740193840195,
+            "confusion_matrix": {
+              "tn": 15,
+              "fp": 60,
+              "fn": 33,
+              "tp": 273
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6718192627824019,
+            "average_precision": 0.8034702986833568,
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.5344827586206896,
+            "sensitivity": 0.9310344827586207,
+            "specificity": 0.13793103448275862,
+            "precision": 0.6835443037974683,
+            "negative_predictive_value": 0.5,
+            "brier_score": 0.21560093090137408,
+            "confusion_matrix": {
+              "tn": 4,
+              "fp": 25,
+              "fn": 4,
+              "tp": 54
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7482869434509927,
+            "average_precision": 0.8157399010283739,
+            "accuracy": 0.6763070077864294,
+            "balanced_accuracy": 0.6775877261182812,
+            "sensitivity": 0.671559633027523,
+            "specificity": 0.6836158192090396,
+            "precision": 0.7656903765690377,
+            "negative_predictive_value": 0.5748218527315915,
+            "brier_score": 0.19711637300669216,
+            "confusion_matrix": {
+              "tn": 242,
+              "fp": 112,
+              "fn": 179,
+              "tp": 366
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7373587740384615,
+            "average_precision": 0.8024598326234746,
+            "accuracy": 0.7011904761904761,
+            "balanced_accuracy": 0.6853365384615384,
+            "sensitivity": 0.7519230769230769,
+            "specificity": 0.61875,
+            "precision": 0.7621832358674464,
+            "negative_predictive_value": 0.6055045871559633,
+            "brier_score": 0.19766949241240164,
+            "confusion_matrix": {
+              "tn": 198,
+              "fp": 122,
+              "fn": 129,
+              "tp": 391
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7376778764559142,
+            "average_precision": 0.7501878906912217,
+            "accuracy": 0.6707317073170732,
+            "balanced_accuracy": 0.6768726205219944,
+            "sensitivity": 0.5509838998211091,
+            "specificity": 0.8027613412228797,
+            "precision": 0.7549019607843137,
+            "negative_predictive_value": 0.6185410334346505,
+            "brier_score": 0.20955588786289792,
+            "confusion_matrix": {
+              "tn": 407,
+              "fp": 100,
+              "fn": 251,
+              "tp": 308
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6454876807649523,
+            "average_precision": 0.850019046890714,
+            "accuracy": 0.7161961367013373,
+            "balanced_accuracy": 0.5424782845376441,
+            "sensitivity": 0.8873517786561265,
+            "specificity": 0.19760479041916168,
+            "precision": 0.7701543739279588,
+            "negative_predictive_value": 0.36666666666666664,
+            "brier_score": 0.1781031448701107,
+            "confusion_matrix": {
+              "tn": 33,
+              "fp": 134,
+              "fn": 57,
+              "tp": 449
+            }
+          }
+        }
+      ]
+    },
+    "Histogram gradient boosting": {
+      "threshold": 0.57,
+      "cutoff_partition": {
+        "roc_auc": 0.7074871713961578,
+        "average_precision": 0.7761507179249235,
+        "accuracy": 0.6811731315042573,
+        "balanced_accuracy": 0.664395834742038,
+        "sensitivity": 0.7418351477449455,
+        "specificity": 0.5869565217391305,
+        "precision": 0.7361111111111112,
+        "negative_predictive_value": 0.5941320293398533,
+        "brier_score": 0.20880927625598286,
+        "confusion_matrix": {
+          "tn": 243,
+          "fp": 171,
+          "fn": 166,
+          "tp": 477
+        },
+        "f1": 0.7389620449264136
+      },
+      "fit_seconds": 1.636440100000982,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 0.891013988592764,
+        "intercept": 0.4963004106317849
+      },
+      "legacy_test": {
+        "roc_auc": 0.746879397054931,
+        "average_precision": 0.8099724442078933,
+        "accuracy": 0.699252443933295,
+        "balanced_accuracy": 0.6746597288976192,
+        "sensitivity": 0.784037558685446,
+        "specificity": 0.5652818991097923,
+        "precision": 0.7402482269503546,
+        "negative_predictive_value": 0.6235679214402619,
+        "brier_score": 0.1954742115644289,
+        "confusion_matrix": {
+          "tn": 381,
+          "fp": 293,
+          "fn": 230,
+          "tp": 835
+        },
+        "f1": 0.7615139078887369
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 4,
+          "mean_probability": 0.1948357045618206,
+          "observed_rate": 0.25
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 68,
+          "mean_probability": 0.2636597021929941,
+          "observed_rate": 0.23529411764705882
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 223,
+          "mean_probability": 0.3474307768986758,
+          "observed_rate": 0.273542600896861
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 178,
+          "mean_probability": 0.45046102329261123,
+          "observed_rate": 0.4438202247191011
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 199,
+          "mean_probability": 0.5498646032879766,
+          "observed_rate": 0.542713567839196
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 274,
+          "mean_probability": 0.6506311530761928,
+          "observed_rate": 0.6204379562043796
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 393,
+          "mean_probability": 0.7498393884070442,
+          "observed_rate": 0.7531806615776081
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 343,
+          "mean_probability": 0.8445712318550771,
+          "observed_rate": 0.8104956268221575
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 57,
+          "mean_probability": 0.922635901700487,
+          "observed_rate": 0.9824561403508771
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6604627766599598,
+            "average_precision": 0.8497244961811627,
+            "accuracy": 0.7303664921465969,
+            "balanced_accuracy": 0.544660822075309,
+            "sensitivity": 0.926056338028169,
+            "specificity": 0.16326530612244897,
+            "precision": 0.7623188405797101,
+            "negative_predictive_value": 0.43243243243243246,
+            "brier_score": 0.17958389092195973,
+            "confusion_matrix": {
+              "tn": 16,
+              "fp": 82,
+              "fn": 21,
+              "tp": 263
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6663478847884788,
+            "average_precision": 0.8005865564196073,
+            "accuracy": 0.696551724137931,
+            "balanced_accuracy": 0.6122299729972998,
+            "sensitivity": 0.8267326732673267,
+            "specificity": 0.3977272727272727,
+            "precision": 0.759090909090909,
+            "negative_predictive_value": 0.5,
+            "brier_score": 0.19518199135699127,
+            "confusion_matrix": {
+              "tn": 35,
+              "fp": 53,
+              "fn": 35,
+              "tp": 167
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7576357626206858,
+            "average_precision": 0.7835602927542782,
+            "accuracy": 0.6888472352389878,
+            "balanced_accuracy": 0.6878556867408477,
+            "sensitivity": 0.6994818652849741,
+            "specificity": 0.6762295081967213,
+            "precision": 0.7193605683836589,
+            "negative_predictive_value": 0.6547619047619048,
+            "brier_score": 0.20124257739908694,
+            "confusion_matrix": {
+              "tn": 330,
+              "fp": 158,
+              "fn": 174,
+              "tp": 405
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7353037911122269,
+            "average_precision": 0.7537671602015967,
+            "accuracy": 0.6753349093774625,
+            "balanced_accuracy": 0.6738111975897565,
+            "sensitivity": 0.6885714285714286,
+            "specificity": 0.6590509666080844,
+            "precision": 0.7130177514792899,
+            "negative_predictive_value": 0.6323777403035413,
+            "brier_score": 0.20758662568894184,
+            "confusion_matrix": {
+              "tn": 375,
+              "fp": 194,
+              "fn": 218,
+              "tp": 482
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6763834422657952,
+            "average_precision": 0.89525262420318,
+            "accuracy": 0.7926509186351706,
+            "balanced_accuracy": 0.5186274509803922,
+            "sensitivity": 0.9705882352941176,
+            "specificity": 0.06666666666666667,
+            "precision": 0.8092643051771117,
+            "negative_predictive_value": 0.35714285714285715,
+            "brier_score": 0.14966766081528085,
+            "confusion_matrix": {
+              "tn": 5,
+              "fp": 70,
+              "fn": 9,
+              "tp": 297
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6646848989298455,
+            "average_precision": 0.7757421911440908,
+            "accuracy": 0.632183908045977,
+            "balanced_accuracy": 0.47413793103448276,
+            "sensitivity": 0.9482758620689655,
+            "specificity": 0.0,
+            "precision": 0.6547619047619048,
+            "negative_predictive_value": 0.0,
+            "brier_score": 0.2209200441124409,
+            "confusion_matrix": {
+              "tn": 0,
+              "fp": 29,
+              "fn": 3,
+              "tp": 55
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7520525579225626,
+            "average_precision": 0.8162610568288046,
+            "accuracy": 0.6941045606229144,
+            "balanced_accuracy": 0.6754366868812522,
+            "sensitivity": 0.763302752293578,
+            "specificity": 0.5875706214689266,
+            "precision": 0.7402135231316725,
+            "negative_predictive_value": 0.6172106824925816,
+            "brier_score": 0.19545966610028045,
+            "confusion_matrix": {
+              "tn": 208,
+              "fp": 146,
+              "fn": 129,
+              "tp": 416
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7413040865384615,
+            "average_precision": 0.8057829553550324,
+            "accuracy": 0.7047619047619048,
+            "balanced_accuracy": 0.6731971153846155,
+            "sensitivity": 0.8057692307692308,
+            "specificity": 0.540625,
+            "precision": 0.7402826855123675,
+            "negative_predictive_value": 0.6313868613138686,
+            "brier_score": 0.19548977867427342,
+            "confusion_matrix": {
+              "tn": 173,
+              "fp": 147,
+              "fn": 101,
+              "tp": 419
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7445018400708507,
+            "average_precision": 0.7503115354569568,
+            "accuracy": 0.6772983114446529,
+            "balanced_accuracy": 0.6788220723820009,
+            "sensitivity": 0.6475849731663685,
+            "specificity": 0.7100591715976331,
+            "precision": 0.7111984282907662,
+            "negative_predictive_value": 0.6463195691202872,
+            "brier_score": 0.20662353402187605,
+            "confusion_matrix": {
+              "tn": 360,
+              "fp": 147,
+              "fn": 197,
+              "tp": 362
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6518425599394098,
+            "average_precision": 0.8542081554898551,
+            "accuracy": 0.7340267459138187,
+            "balanced_accuracy": 0.5302655558448321,
+            "sensitivity": 0.9347826086956522,
+            "specificity": 0.12574850299401197,
+            "precision": 0.7641357027463651,
+            "negative_predictive_value": 0.3888888888888889,
+            "brier_score": 0.17781421492306387,
+            "confusion_matrix": {
+              "tn": 21,
+              "fp": 146,
+              "fn": 33,
+              "tp": 473
+            }
+          }
+        }
+      ]
+    },
+    "Neural network (MLP)": {
+      "threshold": 0.59,
+      "cutoff_partition": {
+        "roc_auc": 0.7112493519958527,
+        "average_precision": 0.7725437718620499,
+        "accuracy": 0.674550614947966,
+        "balanced_accuracy": 0.6662647162680972,
+        "sensitivity": 0.7045101088646968,
+        "specificity": 0.6280193236714976,
+        "precision": 0.7462932454695222,
+        "negative_predictive_value": 0.5777777777777777,
+        "brier_score": 0.20786964958173537,
+        "confusion_matrix": {
+          "tn": 260,
+          "fp": 154,
+          "fn": 190,
+          "tp": 453
+        },
+        "f1": 0.7248
+      },
+      "fit_seconds": 9.568180800000846,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 1.0402940370164115,
+        "intercept": 0.22769997431268238
+      },
+      "legacy_test": {
+        "roc_auc": 0.7317186999345231,
+        "average_precision": 0.7885430120748584,
+        "accuracy": 0.6998274870615296,
+        "balanced_accuracy": 0.6813934049400259,
+        "sensitivity": 0.7633802816901408,
+        "specificity": 0.599406528189911,
+        "precision": 0.7506925207756233,
+        "negative_predictive_value": 0.6158536585365854,
+        "brier_score": 0.19946183388496727,
+        "confusion_matrix": {
+          "tn": 404,
+          "fp": 270,
+          "fn": 252,
+          "tp": 813
+        },
+        "f1": 0.7569832402234636
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 117,
+          "mean_probability": 0.27622234437308135,
+          "observed_rate": 0.21367521367521367
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 217,
+          "mean_probability": 0.34244002952944075,
+          "observed_rate": 0.3640552995391705
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 173,
+          "mean_probability": 0.44630720723760314,
+          "observed_rate": 0.3815028901734104
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 161,
+          "mean_probability": 0.5525082516574087,
+          "observed_rate": 0.5590062111801242
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 246,
+          "mean_probability": 0.6566395312411165,
+          "observed_rate": 0.6463414634146342
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 370,
+          "mean_probability": 0.7548623148649353,
+          "observed_rate": 0.7513513513513513
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 337,
+          "mean_probability": 0.8465138891071492,
+          "observed_rate": 0.7833827893175074
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 118,
+          "mean_probability": 0.9251798010352417,
+          "observed_rate": 0.8813559322033898
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6414199482609945,
+            "average_precision": 0.8317259305227038,
+            "accuracy": 0.7172774869109948,
+            "balanced_accuracy": 0.5525653923541247,
+            "sensitivity": 0.8908450704225352,
+            "specificity": 0.21428571428571427,
+            "precision": 0.7666666666666667,
+            "negative_predictive_value": 0.40384615384615385,
+            "brier_score": 0.18297253993022755,
+            "confusion_matrix": {
+              "tn": 21,
+              "fp": 77,
+              "fn": 31,
+              "tp": 253
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6482335733573357,
+            "average_precision": 0.7885193626268628,
+            "accuracy": 0.6896551724137931,
+            "balanced_accuracy": 0.6104860486048606,
+            "sensitivity": 0.8118811881188119,
+            "specificity": 0.4090909090909091,
+            "precision": 0.7592592592592593,
+            "negative_predictive_value": 0.4864864864864865,
+            "brier_score": 0.19977263539753676,
+            "confusion_matrix": {
+              "tn": 36,
+              "fp": 52,
+              "fn": 38,
+              "tp": 164
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7437356663552196,
+            "average_precision": 0.7617471756529193,
+            "accuracy": 0.6963448922211809,
+            "balanced_accuracy": 0.6975016988023444,
+            "sensitivity": 0.6839378238341969,
+            "specificity": 0.7110655737704918,
+            "precision": 0.7374301675977654,
+            "negative_predictive_value": 0.6547169811320754,
+            "brier_score": 0.20528074471164526,
+            "confusion_matrix": {
+              "tn": 347,
+              "fp": 141,
+              "fn": 183,
+              "tp": 396
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7241225207130304,
+            "average_precision": 0.7287948119535642,
+            "accuracy": 0.6737588652482269,
+            "balanced_accuracy": 0.6760005021340698,
+            "sensitivity": 0.6542857142857142,
+            "specificity": 0.6977152899824253,
+            "precision": 0.726984126984127,
+            "negative_predictive_value": 0.621283255086072,
+            "brier_score": 0.21072145362017805,
+            "confusion_matrix": {
+              "tn": 397,
+              "fp": 172,
+              "fn": 242,
+              "tp": 458
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6523311546840959,
+            "average_precision": 0.8760824289781405,
+            "accuracy": 0.7952755905511811,
+            "balanced_accuracy": 0.5252941176470588,
+            "sensitivity": 0.9705882352941176,
+            "specificity": 0.08,
+            "precision": 0.8114754098360656,
+            "negative_predictive_value": 0.4,
+            "brier_score": 0.15183480510025385,
+            "confusion_matrix": {
+              "tn": 6,
+              "fp": 69,
+              "fn": 9,
+              "tp": 297
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5885850178359097,
+            "average_precision": 0.7777182922612774,
+            "accuracy": 0.6551724137931034,
+            "balanced_accuracy": 0.49137931034482757,
+            "sensitivity": 0.9827586206896551,
+            "specificity": 0.0,
+            "precision": 0.6627906976744186,
+            "negative_predictive_value": 0.0,
+            "brier_score": 0.24677384099585475,
+            "confusion_matrix": {
+              "tn": 0,
+              "fp": 29,
+              "fn": 1,
+              "tp": 57
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7450733426631421,
+            "average_precision": 0.8108431622775247,
+            "accuracy": 0.6974416017797553,
+            "balanced_accuracy": 0.6856139532472918,
+            "sensitivity": 0.7412844036697248,
+            "specificity": 0.6299435028248588,
+            "precision": 0.7551401869158878,
+            "negative_predictive_value": 0.6126373626373627,
+            "brier_score": 0.19728780652926253,
+            "confusion_matrix": {
+              "tn": 223,
+              "fp": 131,
+              "fn": 141,
+              "tp": 404
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7169951923076924,
+            "average_precision": 0.7735187649697144,
+            "accuracy": 0.7023809523809523,
+            "balanced_accuracy": 0.6760817307692308,
+            "sensitivity": 0.7865384615384615,
+            "specificity": 0.565625,
+            "precision": 0.7463503649635036,
+            "negative_predictive_value": 0.6198630136986302,
+            "brier_score": 0.20178856078113222,
+            "confusion_matrix": {
+              "tn": 181,
+              "fp": 139,
+              "fn": 111,
+              "tp": 409
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7308768475687424,
+            "average_precision": 0.7253817222543067,
+            "accuracy": 0.6707317073170732,
+            "balanced_accuracy": 0.6750378423008119,
+            "sensitivity": 0.5867620751341681,
+            "specificity": 0.7633136094674556,
+            "precision": 0.7321428571428571,
+            "negative_predictive_value": 0.6262135922330098,
+            "brier_score": 0.20978037074739772,
+            "confusion_matrix": {
+              "tn": 387,
+              "fp": 120,
+              "fn": 231,
+              "tp": 328
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6215474189960001,
+            "average_precision": 0.8304857143265465,
+            "accuracy": 0.7459138187221397,
+            "balanced_accuracy": 0.5301472154505219,
+            "sensitivity": 0.958498023715415,
+            "specificity": 0.10179640718562874,
+            "precision": 0.7637795275590551,
+            "negative_predictive_value": 0.4473684210526316,
+            "brier_score": 0.18311776212367328,
+            "confusion_matrix": {
+              "tn": 17,
+              "fp": 150,
+              "fn": 21,
+              "tp": 485
+            }
+          }
+        }
+      ]
+    },
+    "SVM (RBF)": {
+      "threshold": 0.59,
+      "cutoff_partition": {
+        "roc_auc": 0.7094011314715893,
+        "average_precision": 0.7760417733176866,
+        "accuracy": 0.674550614947966,
+        "balanced_accuracy": 0.6740069571227865,
+        "sensitivity": 0.6765163297045101,
+        "specificity": 0.6714975845410628,
+        "precision": 0.7618213660245184,
+        "negative_predictive_value": 0.5720164609053497,
+        "brier_score": 0.2082229841857589,
+        "confusion_matrix": {
+          "tn": 278,
+          "fp": 136,
+          "fn": 208,
+          "tp": 435
+        },
+        "f1": 0.7166392092257001
+      },
+      "fit_seconds": 8.451927500000238,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 1.032569064420568,
+        "intercept": 0.531751420751682
+      },
+      "legacy_test": {
+        "roc_auc": 0.7350009055321046,
+        "average_precision": 0.7955962844257889,
+        "accuracy": 0.6935020126509488,
+        "balanced_accuracy": 0.6816762095819228,
+        "sensitivity": 0.7342723004694836,
+        "specificity": 0.629080118694362,
+        "precision": 0.7577519379844961,
+        "negative_predictive_value": 0.5997171145685997,
+        "brier_score": 0.1990260331580926,
+        "confusion_matrix": {
+          "tn": 424,
+          "fp": 250,
+          "fn": 283,
+          "tp": 782
+        },
+        "f1": 0.7458273724368145
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 10,
+          "mean_probability": 0.2721883235325199,
+          "observed_rate": 0.1
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 380,
+          "mean_probability": 0.36130910292285945,
+          "observed_rate": 0.3105263157894737
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 175,
+          "mean_probability": 0.4432581010338362,
+          "observed_rate": 0.4685714285714286
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 154,
+          "mean_probability": 0.5493724322221406,
+          "observed_rate": 0.5714285714285714
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 173,
+          "mean_probability": 0.6509981641726506,
+          "observed_rate": 0.6473988439306358
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 342,
+          "mean_probability": 0.759172880215938,
+          "observed_rate": 0.7397660818713451
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 492,
+          "mean_probability": 0.8373681938548747,
+          "observed_rate": 0.8109756097560976
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 13,
+          "mean_probability": 0.9075909642047907,
+          "observed_rate": 0.9230769230769231
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6385096292037942,
+            "average_precision": 0.847071356062707,
+            "accuracy": 0.693717277486911,
+            "balanced_accuracy": 0.5634521414199483,
+            "sensitivity": 0.8309859154929577,
+            "specificity": 0.29591836734693877,
+            "precision": 0.7737704918032787,
+            "negative_predictive_value": 0.37662337662337664,
+            "brier_score": 0.1877904038036096,
+            "confusion_matrix": {
+              "tn": 29,
+              "fp": 69,
+              "fn": 48,
+              "tp": 236
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6566719171917191,
+            "average_precision": 0.7921899339707449,
+            "accuracy": 0.6827586206896552,
+            "balanced_accuracy": 0.6279815481548154,
+            "sensitivity": 0.7673267326732673,
+            "specificity": 0.48863636363636365,
+            "precision": 0.775,
+            "negative_predictive_value": 0.4777777777777778,
+            "brier_score": 0.19817223970177633,
+            "confusion_matrix": {
+              "tn": 43,
+              "fp": 45,
+              "fn": 47,
+              "tp": 155
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7481242390781166,
+            "average_precision": 0.7665877932892485,
+            "accuracy": 0.6963448922211809,
+            "balanced_accuracy": 0.6983068603301339,
+            "sensitivity": 0.6753022452504318,
+            "specificity": 0.7213114754098361,
+            "precision": 0.7419354838709677,
+            "negative_predictive_value": 0.6518518518518519,
+            "brier_score": 0.20328058846806846,
+            "confusion_matrix": {
+              "tn": 352,
+              "fp": 136,
+              "fn": 188,
+              "tp": 391
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7255209640974141,
+            "average_precision": 0.7574726708955827,
+            "accuracy": 0.6619385342789598,
+            "balanced_accuracy": 0.6682462967612353,
+            "sensitivity": 0.6071428571428571,
+            "specificity": 0.7293497363796133,
+            "precision": 0.7340241796200345,
+            "negative_predictive_value": 0.6014492753623188,
+            "brier_score": 0.21031472226110554,
+            "confusion_matrix": {
+              "tn": 415,
+              "fp": 154,
+              "fn": 275,
+              "tp": 425
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6152069716775599,
+            "average_precision": 0.8548945095518815,
+            "accuracy": 0.800524934383202,
+            "balanced_accuracy": 0.5335947712418301,
+            "sensitivity": 0.9738562091503268,
+            "specificity": 0.09333333333333334,
+            "precision": 0.8142076502732241,
+            "negative_predictive_value": 0.4666666666666667,
+            "brier_score": 0.15371072298455488,
+            "confusion_matrix": {
+              "tn": 7,
+              "fp": 68,
+              "fn": 8,
+              "tp": 298
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5326991676575505,
+            "average_precision": 0.7049760271830838,
+            "accuracy": 0.6781609195402298,
+            "balanced_accuracy": 0.5172413793103449,
+            "sensitivity": 1.0,
+            "specificity": 0.034482758620689655,
+            "precision": 0.6744186046511628,
+            "negative_predictive_value": 1.0,
+            "brier_score": 0.23573159947719233,
+            "confusion_matrix": {
+              "tn": 1,
+              "fp": 28,
+              "fn": 0,
+              "tp": 58
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7527497019644431,
+            "average_precision": 0.8175670408756637,
+            "accuracy": 0.699666295884316,
+            "balanced_accuracy": 0.6953687866065412,
+            "sensitivity": 0.7155963302752294,
+            "specificity": 0.6751412429378532,
+            "precision": 0.7722772277227723,
+            "negative_predictive_value": 0.6065989847715736,
+            "brier_score": 0.19436336021927927,
+            "confusion_matrix": {
+              "tn": 239,
+              "fp": 115,
+              "fn": 155,
+              "tp": 390
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7145612980769231,
+            "average_precision": 0.7808236861698139,
+            "accuracy": 0.6869047619047619,
+            "balanced_accuracy": 0.6659855769230769,
+            "sensitivity": 0.7538461538461538,
+            "specificity": 0.578125,
+            "precision": 0.7438330170777988,
+            "negative_predictive_value": 0.5910543130990416,
+            "brier_score": 0.2040162033628464,
+            "confusion_matrix": {
+              "tn": 185,
+              "fp": 135,
+              "fn": 128,
+              "tp": 392
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7266850850172717,
+            "average_precision": 0.740181855485124,
+            "accuracy": 0.6529080675422139,
+            "balanced_accuracy": 0.6597862483372322,
+            "sensitivity": 0.518783542039356,
+            "specificity": 0.8007889546351085,
+            "precision": 0.7416879795396419,
+            "negative_predictive_value": 0.6014814814814815,
+            "brier_score": 0.2109809760286821,
+            "confusion_matrix": {
+              "tn": 406,
+              "fp": 101,
+              "fn": 269,
+              "tp": 290
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6291448723107145,
+            "average_precision": 0.8358387202735934,
+            "accuracy": 0.7578008915304606,
+            "balanced_accuracy": 0.5400582234740007,
+            "sensitivity": 0.9723320158102767,
+            "specificity": 0.10778443113772455,
+            "precision": 0.7675507020280812,
+            "negative_predictive_value": 0.5625,
+            "brier_score": 0.18008997208818414,
+            "confusion_matrix": {
+              "tn": 18,
+              "fp": 149,
+              "fn": 14,
+              "tp": 492
+            }
+          }
+        }
+      ]
+    },
+    "Logistic regression": {
+      "threshold": 0.57,
+      "cutoff_partition": {
+        "roc_auc": 0.7004305001465052,
+        "average_precision": 0.7599725875810601,
+        "accuracy": 0.6660359508041628,
+        "balanced_accuracy": 0.6575457735103418,
+        "sensitivity": 0.6967340590979783,
+        "specificity": 0.6183574879227053,
+        "precision": 0.7392739273927392,
+        "negative_predictive_value": 0.5676274944567627,
+        "brier_score": 0.21127435869884073,
+        "confusion_matrix": {
+          "tn": 256,
+          "fp": 158,
+          "fn": 195,
+          "tp": 448
+        },
+        "f1": 0.7173738991192954
+      },
+      "fit_seconds": 0.2055663999999524,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 1.1031341224021918,
+        "intercept": 0.5724674097099771
+      },
+      "legacy_test": {
+        "roc_auc": 0.7366475808361546,
+        "average_precision": 0.790693593351685,
+        "accuracy": 0.7084531339850488,
+        "balanced_accuracy": 0.6900697956283697,
+        "sensitivity": 0.7718309859154929,
+        "specificity": 0.6083086053412463,
+        "precision": 0.7569060773480663,
+        "negative_predictive_value": 0.6278713629402757,
+        "brier_score": 0.19939577683644186,
+        "confusion_matrix": {
+          "tn": 410,
+          "fp": 264,
+          "fn": 243,
+          "tp": 822
+        },
+        "f1": 0.7642956764295676
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 5,
+          "mean_probability": 0.1787401893421401,
+          "observed_rate": 0.0
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 54,
+          "mean_probability": 0.2614508045900048,
+          "observed_rate": 0.25925925925925924
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 172,
+          "mean_probability": 0.3590951200873127,
+          "observed_rate": 0.31976744186046513
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 252,
+          "mean_probability": 0.4551524659653787,
+          "observed_rate": 0.36507936507936506
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 247,
+          "mean_probability": 0.5510528430515375,
+          "observed_rate": 0.5222672064777328
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 280,
+          "mean_probability": 0.6494015448064309,
+          "observed_rate": 0.7
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 332,
+          "mean_probability": 0.7489987886339119,
+          "observed_rate": 0.7590361445783133
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 278,
+          "mean_probability": 0.8465656752368742,
+          "observed_rate": 0.7913669064748201
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 119,
+          "mean_probability": 0.9315189564535382,
+          "observed_rate": 0.8991596638655462
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6339465363610233,
+            "average_precision": 0.8372186838757248,
+            "accuracy": 0.7015706806282722,
+            "balanced_accuracy": 0.5520264443805691,
+            "sensitivity": 0.8591549295774648,
+            "specificity": 0.24489795918367346,
+            "precision": 0.7672955974842768,
+            "negative_predictive_value": 0.375,
+            "brier_score": 0.1859607654952955,
+            "confusion_matrix": {
+              "tn": 24,
+              "fp": 74,
+              "fn": 40,
+              "tp": 244
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.663535103510351,
+            "average_precision": 0.8035898567204552,
+            "accuracy": 0.7103448275862069,
+            "balanced_accuracy": 0.6253375337533753,
+            "sensitivity": 0.8415841584158416,
+            "specificity": 0.4090909090909091,
+            "precision": 0.7657657657657657,
+            "negative_predictive_value": 0.5294117647058824,
+            "brier_score": 0.1984941226061231,
+            "confusion_matrix": {
+              "tn": 36,
+              "fp": 52,
+              "fn": 32,
+              "tp": 170
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7516032447124776,
+            "average_precision": 0.7605651132297812,
+            "accuracy": 0.7104029990627929,
+            "balanced_accuracy": 0.7109381635946657,
+            "sensitivity": 0.7046632124352331,
+            "specificity": 0.7172131147540983,
+            "precision": 0.7472527472527473,
+            "negative_predictive_value": 0.6717850287907869,
+            "brier_score": 0.2044507478384197,
+            "confusion_matrix": {
+              "tn": 350,
+              "fp": 138,
+              "fn": 171,
+              "tp": 408
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7289128797388904,
+            "average_precision": 0.7464322189118259,
+            "accuracy": 0.6895193065405831,
+            "balanced_accuracy": 0.6909440120512177,
+            "sensitivity": 0.6771428571428572,
+            "specificity": 0.7047451669595782,
+            "precision": 0.7383177570093458,
+            "negative_predictive_value": 0.6395534290271132,
+            "brier_score": 0.2106525517773935,
+            "confusion_matrix": {
+              "tn": 401,
+              "fp": 168,
+              "fn": 226,
+              "tp": 474
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.664967320261438,
+            "average_precision": 0.8897277882928486,
+            "accuracy": 0.7821522309711286,
+            "balanced_accuracy": 0.517124183006536,
+            "sensitivity": 0.954248366013072,
+            "specificity": 0.08,
+            "precision": 0.8088642659279779,
+            "negative_predictive_value": 0.3,
+            "brier_score": 0.15091357306421385,
+            "confusion_matrix": {
+              "tn": 6,
+              "fp": 69,
+              "fn": 14,
+              "tp": 292
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5921521997621878,
+            "average_precision": 0.7275609449600623,
+            "accuracy": 0.6551724137931034,
+            "balanced_accuracy": 0.5086206896551724,
+            "sensitivity": 0.9482758620689655,
+            "specificity": 0.06896551724137931,
+            "precision": 0.6707317073170732,
+            "negative_predictive_value": 0.4,
+            "brier_score": 0.24927868840801348,
+            "confusion_matrix": {
+              "tn": 2,
+              "fp": 27,
+              "fn": 3,
+              "tp": 55
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7471829160835536,
+            "average_precision": 0.7966468596052676,
+            "accuracy": 0.7074527252502781,
+            "balanced_accuracy": 0.7008008085834241,
+            "sensitivity": 0.7321100917431193,
+            "specificity": 0.6694915254237288,
+            "precision": 0.7732558139534884,
+            "negative_predictive_value": 0.618798955613577,
+            "brier_score": 0.19732828839999203,
+            "confusion_matrix": {
+              "tn": 237,
+              "fp": 117,
+              "fn": 146,
+              "tp": 399
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7252884615384615,
+            "average_precision": 0.7915063457690018,
+            "accuracy": 0.7095238095238096,
+            "balanced_accuracy": 0.6770432692307693,
+            "sensitivity": 0.8134615384615385,
+            "specificity": 0.540625,
+            "precision": 0.7421052631578947,
+            "negative_predictive_value": 0.6407407407407407,
+            "brier_score": 0.20160848172259468,
+            "confusion_matrix": {
+              "tn": 173,
+              "fp": 147,
+              "fn": 97,
+              "tp": 423
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7356754983010658,
+            "average_precision": 0.7388163004362297,
+            "accuracy": 0.6894934333958724,
+            "balanced_accuracy": 0.6935691023347552,
+            "sensitivity": 0.6100178890876565,
+            "specificity": 0.777120315581854,
+            "precision": 0.751101321585903,
+            "negative_predictive_value": 0.6437908496732027,
+            "brier_score": 0.21079932432377152,
+            "confusion_matrix": {
+              "tn": 394,
+              "fp": 113,
+              "fn": 218,
+              "tp": 341
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6341270029111736,
+            "average_precision": 0.8290910018886428,
+            "accuracy": 0.7384843982169391,
+            "balanced_accuracy": 0.5232006343045135,
+            "sensitivity": 0.950592885375494,
+            "specificity": 0.09580838323353294,
+            "precision": 0.7610759493670886,
+            "negative_predictive_value": 0.3902439024390244,
+            "brier_score": 0.1813330998357087,
+            "confusion_matrix": {
+              "tn": 16,
+              "fp": 151,
+              "fn": 25,
+              "tp": 481
+            }
+          }
+        }
+      ]
+    },
+    "AdaBoost": {
+      "threshold": 0.54,
+      "cutoff_partition": {
+        "roc_auc": 0.6844520326669222,
+        "average_precision": 0.7381657716040562,
+        "accuracy": 0.6669820245979187,
+        "balanced_accuracy": 0.6557426315354505,
+        "sensitivity": 0.7076205287713841,
+        "specificity": 0.6038647342995169,
+        "precision": 0.7350565428109854,
+        "negative_predictive_value": 0.5707762557077626,
+        "brier_score": 0.21717776973389497,
+        "confusion_matrix": {
+          "tn": 250,
+          "fp": 164,
+          "fn": 188,
+          "tp": 455
+        },
+        "f1": 0.7210776545166403
+      },
+      "fit_seconds": 4.542875900000581,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 1.4583994834231002,
+        "intercept": 0.0594633379099363
+      },
+      "legacy_test": {
+        "roc_auc": 0.7208160933951882,
+        "average_precision": 0.7795826824669885,
+        "accuracy": 0.7021276595744681,
+        "balanced_accuracy": 0.6819095582396455,
+        "sensitivity": 0.7718309859154929,
+        "specificity": 0.5919881305637982,
+        "precision": 0.7493163172288059,
+        "negative_predictive_value": 0.6214953271028038,
+        "brier_score": 0.2043309719243174,
+        "confusion_matrix": {
+          "tn": 399,
+          "fp": 275,
+          "fn": 243,
+          "tp": 822
+        },
+        "f1": 0.7604070305272895
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 24,
+          "mean_probability": 0.2674873711007233,
+          "observed_rate": 0.16666666666666666
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 160,
+          "mean_probability": 0.3599523578800144,
+          "observed_rate": 0.3125
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 340,
+          "mean_probability": 0.44399078591608804,
+          "observed_rate": 0.36176470588235293
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 241,
+          "mean_probability": 0.5471631456431313,
+          "observed_rate": 0.6182572614107884
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 263,
+          "mean_probability": 0.6481184506553438,
+          "observed_rate": 0.7262357414448669
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 281,
+          "mean_probability": 0.7526162000254392,
+          "observed_rate": 0.7330960854092526
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 344,
+          "mean_probability": 0.8510708871900466,
+          "observed_rate": 0.7703488372093024
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 86,
+          "mean_probability": 0.9135976568099611,
+          "observed_rate": 0.8953488372093024
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6012144294337454,
+            "average_precision": 0.8174056552490621,
+            "accuracy": 0.7460732984293194,
+            "balanced_accuracy": 0.5451997700488646,
+            "sensitivity": 0.9577464788732394,
+            "specificity": 0.1326530612244898,
+            "precision": 0.7619047619047619,
+            "negative_predictive_value": 0.52,
+            "brier_score": 0.1887078739940538,
+            "confusion_matrix": {
+              "tn": 13,
+              "fp": 85,
+              "fn": 12,
+              "tp": 272
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6365605310531054,
+            "average_precision": 0.7872319830922532,
+            "accuracy": 0.6896551724137931,
+            "balanced_accuracy": 0.6008663366336633,
+            "sensitivity": 0.8267326732673267,
+            "specificity": 0.375,
+            "precision": 0.7522522522522522,
+            "negative_predictive_value": 0.4852941176470588,
+            "brier_score": 0.2063304866724121,
+            "confusion_matrix": {
+              "tn": 33,
+              "fp": 55,
+              "fn": 35,
+              "tp": 167
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7379862821710697,
+            "average_precision": 0.7505783637826239,
+            "accuracy": 0.689784442361762,
+            "balanced_accuracy": 0.6924229876270562,
+            "sensitivity": 0.6614853195164075,
+            "specificity": 0.7233606557377049,
+            "precision": 0.7393822393822393,
+            "negative_predictive_value": 0.6429872495446266,
+            "brier_score": 0.20938079772789117,
+            "confusion_matrix": {
+              "tn": 353,
+              "fp": 135,
+              "fn": 196,
+              "tp": 383
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7163758473512428,
+            "average_precision": 0.7257972280691908,
+            "accuracy": 0.6753349093774625,
+            "balanced_accuracy": 0.677757971378358,
+            "sensitivity": 0.6542857142857142,
+            "specificity": 0.7012302284710018,
+            "precision": 0.7292993630573248,
+            "negative_predictive_value": 0.6224648985959438,
+            "brier_score": 0.2152421724804217,
+            "confusion_matrix": {
+              "tn": 399,
+              "fp": 170,
+              "fn": 242,
+              "tp": 458
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6151416122004356,
+            "average_precision": 0.8666139906868944,
+            "accuracy": 0.800524934383202,
+            "balanced_accuracy": 0.49836601307189543,
+            "sensitivity": 0.9967320261437909,
+            "specificity": 0.0,
+            "precision": 0.8026315789473685,
+            "negative_predictive_value": 0.0,
+            "brier_score": 0.1564147443538881,
+            "confusion_matrix": {
+              "tn": 0,
+              "fp": 75,
+              "fn": 1,
+              "tp": 305
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6394173602853745,
+            "average_precision": 0.7976805483689268,
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.5,
+            "sensitivity": 1.0,
+            "specificity": 0.0,
+            "precision": 0.6666666666666666,
+            "negative_predictive_value": null,
+            "brier_score": 0.2544937694273571,
+            "confusion_matrix": {
+              "tn": 0,
+              "fp": 29,
+              "fn": 0,
+              "tp": 58
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.730990514694449,
+            "average_precision": 0.7891619832693838,
+            "accuracy": 0.699666295884316,
+            "balanced_accuracy": 0.6849738247032602,
+            "sensitivity": 0.7541284403669725,
+            "specificity": 0.615819209039548,
+            "precision": 0.7513711151736746,
+            "negative_predictive_value": 0.6193181818181818,
+            "brier_score": 0.2030545999501741,
+            "confusion_matrix": {
+              "tn": 218,
+              "fp": 136,
+              "fn": 134,
+              "tp": 411
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7079086538461539,
+            "average_precision": 0.7711733421476779,
+            "accuracy": 0.7047619047619048,
+            "balanced_accuracy": 0.6780048076923078,
+            "sensitivity": 0.7903846153846154,
+            "specificity": 0.565625,
+            "precision": 0.7472727272727273,
+            "negative_predictive_value": 0.6241379310344828,
+            "brier_score": 0.2056969938347398,
+            "confusion_matrix": {
+              "tn": 181,
+              "fp": 139,
+              "fn": 109,
+              "tp": 411
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7260252705415771,
+            "average_precision": 0.723402673778977,
+            "accuracy": 0.6697936210131332,
+            "balanced_accuracy": 0.6751525159396359,
+            "sensitivity": 0.5652951699463328,
+            "specificity": 0.7850098619329389,
+            "precision": 0.7435294117647059,
+            "negative_predictive_value": 0.6209048361934477,
+            "brier_score": 0.21638958820016585,
+            "confusion_matrix": {
+              "tn": 398,
+              "fp": 109,
+              "fn": 243,
+              "tp": 316
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6113464770064614,
+            "average_precision": 0.8278768673006239,
+            "accuracy": 0.7533432392273403,
+            "balanced_accuracy": 0.5029940119760479,
+            "sensitivity": 1.0,
+            "specificity": 0.005988023952095809,
+            "precision": 0.7529761904761905,
+            "negative_predictive_value": 1.0,
+            "brier_score": 0.18523069710997203,
+            "confusion_matrix": {
+              "tn": 1,
+              "fp": 166,
+              "fn": 0,
+              "tp": 506
+            }
+          }
+        }
+      ]
+    },
+    "Nearest neighbours": {
+      "threshold": 0.66,
+      "cutoff_partition": {
+        "roc_auc": 0.698935394925658,
+        "average_precision": 0.7752726825032348,
+        "accuracy": 0.6404919583727531,
+        "balanced_accuracy": 0.6589169127204153,
+        "sensitivity": 0.5738724727838258,
+        "specificity": 0.7439613526570048,
+        "precision": 0.7768421052631579,
+        "negative_predictive_value": 0.5292096219931272,
+        "brier_score": 0.21236060041245305,
+        "confusion_matrix": {
+          "tn": 308,
+          "fp": 106,
+          "fn": 274,
+          "tp": 369
+        },
+        "f1": 0.6601073345259392
+      },
+      "fit_seconds": 0.0015120999996725004,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 0.986432010350377,
+        "intercept": 0.19683046784420533
+      },
+      "legacy_test": {
+        "roc_auc": 0.7152756300413758,
+        "average_precision": 0.7684202393981747,
+        "accuracy": 0.6630247268545141,
+        "balanced_accuracy": 0.6706837463952857,
+        "sensitivity": 0.6366197183098592,
+        "specificity": 0.7047477744807121,
+        "precision": 0.7730900798175598,
+        "negative_predictive_value": 0.5510440835266821,
+        "brier_score": 0.20478621002971364,
+        "confusion_matrix": {
+          "tn": 475,
+          "fp": 199,
+          "fn": 387,
+          "tp": 678
+        },
+        "f1": 0.698249227600412
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.0,
+          "upper": 0.1,
+          "n": 1,
+          "mean_probability": 0.05029981728057965,
+          "observed_rate": 0.0
+        },
+        {
+          "lower": 0.1,
+          "upper": 0.2,
+          "n": 13,
+          "mean_probability": 0.17792403833753884,
+          "observed_rate": 0.3076923076923077
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.3,
+          "n": 102,
+          "mean_probability": 0.26247452533363425,
+          "observed_rate": 0.2549019607843137
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 194,
+          "mean_probability": 0.3527552411753615,
+          "observed_rate": 0.32989690721649484
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 178,
+          "mean_probability": 0.4493661084853934,
+          "observed_rate": 0.4550561797752809
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 225,
+          "mean_probability": 0.5497354270260716,
+          "observed_rate": 0.5422222222222223
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 279,
+          "mean_probability": 0.6548193524798769,
+          "observed_rate": 0.6451612903225806
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 401,
+          "mean_probability": 0.7490744228704179,
+          "observed_rate": 0.7930174563591023
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 264,
+          "mean_probability": 0.8408822872115542,
+          "observed_rate": 0.7689393939393939
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 82,
+          "mean_probability": 0.9288350787366321,
+          "observed_rate": 0.8170731707317073
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6212273641851107,
+            "average_precision": 0.8180500227554679,
+            "accuracy": 0.6570680628272252,
+            "balanced_accuracy": 0.5956093705087669,
+            "sensitivity": 0.721830985915493,
+            "specificity": 0.46938775510204084,
+            "precision": 0.7976653696498055,
+            "negative_predictive_value": 0.368,
+            "brier_score": 0.18962741071381062,
+            "confusion_matrix": {
+              "tn": 46,
+              "fp": 52,
+              "fn": 79,
+              "tp": 205
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6467146714671468,
+            "average_precision": 0.7880801876961127,
+            "accuracy": 0.6482758620689655,
+            "balanced_accuracy": 0.622468496849685,
+            "sensitivity": 0.6881188118811881,
+            "specificity": 0.5568181818181818,
+            "precision": 0.7808988764044944,
+            "negative_predictive_value": 0.4375,
+            "brier_score": 0.20197854392721856,
+            "confusion_matrix": {
+              "tn": 49,
+              "fp": 39,
+              "fn": 63,
+              "tp": 139
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7282517908208047,
+            "average_precision": 0.7333128084719946,
+            "accuracy": 0.669165885660731,
+            "balanced_accuracy": 0.6777725869928367,
+            "sensitivity": 0.5768566493955095,
+            "specificity": 0.7786885245901639,
+            "precision": 0.755656108597285,
+            "negative_predictive_value": 0.608,
+            "brier_score": 0.21097635483608523,
+            "confusion_matrix": {
+              "tn": 380,
+              "fp": 108,
+              "fn": 245,
+              "tp": 334
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7078784835551093,
+            "average_precision": 0.7048090077799388,
+            "accuracy": 0.6351457840819543,
+            "balanced_accuracy": 0.6500451920662818,
+            "sensitivity": 0.5057142857142857,
+            "specificity": 0.7943760984182777,
+            "precision": 0.7515923566878981,
+            "negative_predictive_value": 0.5664160401002506,
+            "brier_score": 0.21671462410575645,
+            "confusion_matrix": {
+              "tn": 452,
+              "fp": 117,
+              "fn": 346,
+              "tp": 354
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6251851851851852,
+            "average_precision": 0.8770370791969844,
+            "accuracy": 0.7427821522309711,
+            "balanced_accuracy": 0.5479738562091503,
+            "sensitivity": 0.869281045751634,
+            "specificity": 0.22666666666666666,
+            "precision": 0.8209876543209876,
+            "negative_predictive_value": 0.2982456140350877,
+            "brier_score": 0.15840951322183114,
+            "confusion_matrix": {
+              "tn": 17,
+              "fp": 58,
+              "fn": 40,
+              "tp": 266
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5517241379310345,
+            "average_precision": 0.7483711836340242,
+            "accuracy": 0.7126436781609196,
+            "balanced_accuracy": 0.5775862068965517,
+            "sensitivity": 0.9827586206896551,
+            "specificity": 0.1724137931034483,
+            "precision": 0.7037037037037037,
+            "negative_predictive_value": 0.8333333333333334,
+            "brier_score": 0.2355577282536563,
+            "confusion_matrix": {
+              "tn": 5,
+              "fp": 24,
+              "fn": 1,
+              "tp": 57
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7344840097444669,
+            "average_precision": 0.7999525843986449,
+            "accuracy": 0.6718576195773082,
+            "balanced_accuracy": 0.6862929559944021,
+            "sensitivity": 0.618348623853211,
+            "specificity": 0.7542372881355932,
+            "precision": 0.7948113207547169,
+            "negative_predictive_value": 0.5621052631578948,
+            "brier_score": 0.20146725043108754,
+            "confusion_matrix": {
+              "tn": 267,
+              "fp": 87,
+              "fn": 208,
+              "tp": 337
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6932752403846154,
+            "average_precision": 0.7426763439963691,
+            "accuracy": 0.6535714285714286,
+            "balanced_accuracy": 0.6528846153846154,
+            "sensitivity": 0.6557692307692308,
+            "specificity": 0.65,
+            "precision": 0.7527593818984547,
+            "negative_predictive_value": 0.537467700258398,
+            "brier_score": 0.20833828702871943,
+            "confusion_matrix": {
+              "tn": 208,
+              "fp": 112,
+              "fn": 179,
+              "tp": 341
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7092582203356937,
+            "average_precision": 0.7059566288966718,
+            "accuracy": 0.6238273921200751,
+            "balanced_accuracy": 0.6349938076235035,
+            "sensitivity": 0.40608228980322003,
+            "specificity": 0.863905325443787,
+            "precision": 0.7668918918918919,
+            "negative_predictive_value": 0.5688311688311688,
+            "brier_score": 0.21743975549740746,
+            "confusion_matrix": {
+              "tn": 438,
+              "fp": 69,
+              "fn": 332,
+              "tp": 227
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5898085252420061,
+            "average_precision": 0.8084801015254799,
+            "accuracy": 0.725111441307578,
+            "balanced_accuracy": 0.556430617026816,
+            "sensitivity": 0.8913043478260869,
+            "specificity": 0.2215568862275449,
+            "precision": 0.7762478485370051,
+            "negative_predictive_value": 0.40217391304347827,
+            "brier_score": 0.18474359566335166,
+            "confusion_matrix": {
+              "tn": 37,
+              "fp": 130,
+              "fn": 55,
+              "tp": 451
+            }
+          }
+        }
+      ]
+    },
+    "Gaussian naive Bayes": {
+      "threshold": 0.56,
+      "cutoff_partition": {
+        "roc_auc": 0.6721023884118076,
+        "average_precision": 0.7484818542877876,
+        "accuracy": 0.6575212866603595,
+        "balanced_accuracy": 0.6449557103252417,
+        "sensitivity": 0.702954898911353,
+        "specificity": 0.5869565217391305,
+        "precision": 0.7255216693418941,
+        "negative_predictive_value": 0.5599078341013825,
+        "brier_score": 0.22311861432861432,
+        "confusion_matrix": {
+          "tn": 243,
+          "fp": 171,
+          "fn": 191,
+          "tp": 452
+        },
+        "f1": 0.7140600315955766
+      },
+      "fit_seconds": 0.012953200000993093,
+      "warnings": {},
+      "calibration": {
+        "coefficient": 0.05815135872171552,
+        "intercept": 0.717418301590161
+      },
+      "legacy_test": {
+        "roc_auc": 0.6869101851464873,
+        "average_precision": 0.7394544840990742,
+        "accuracy": 0.6831512363427257,
+        "balanced_accuracy": 0.6617865451860521,
+        "sensitivity": 0.7568075117370892,
+        "specificity": 0.5667655786350149,
+        "precision": 0.7340619307832422,
+        "negative_predictive_value": 0.5959438377535101,
+        "brier_score": 0.22180457767265427,
+        "confusion_matrix": {
+          "tn": 382,
+          "fp": 292,
+          "fn": 259,
+          "tp": 806
+        },
+        "f1": 0.7452612112806287
+      },
+      "calibration_bins": [
+        {
+          "lower": 0.0,
+          "upper": 0.1,
+          "n": 1,
+          "mean_probability": 0.05775946221098758,
+          "observed_rate": 1.0
+        },
+        {
+          "lower": 0.3,
+          "upper": 0.4,
+          "n": 154,
+          "mean_probability": 0.3808918495183047,
+          "observed_rate": 0.33766233766233766
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.5,
+          "n": 94,
+          "mean_probability": 0.4616445641954245,
+          "observed_rate": 0.44680851063829785
+        },
+        {
+          "lower": 0.5,
+          "upper": 0.6,
+          "n": 775,
+          "mean_probability": 0.5594977595859005,
+          "observed_rate": 0.5432258064516129
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.7,
+          "n": 275,
+          "mean_probability": 0.6418305561929655,
+          "observed_rate": 0.7672727272727272
+        },
+        {
+          "lower": 0.7,
+          "upper": 0.8,
+          "n": 198,
+          "mean_probability": 0.7511682419300159,
+          "observed_rate": 0.803030303030303
+        },
+        {
+          "lower": 0.8,
+          "upper": 0.9,
+          "n": 143,
+          "mean_probability": 0.8449219220083013,
+          "observed_rate": 0.7062937062937062
+        },
+        {
+          "lower": 0.9,
+          "upper": 1.0,
+          "n": 99,
+          "mean_probability": 0.9499602207475091,
+          "observed_rate": 0.7878787878787878
+        }
+      ],
+      "subgroups": [
+        {
+          "group": "Age under 15",
+          "n": 382,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5689134808853119,
+            "average_precision": 0.7986010968755552,
+            "accuracy": 0.6780104712041884,
+            "balanced_accuracy": 0.5361813739580339,
+            "sensitivity": 0.8274647887323944,
+            "specificity": 0.24489795918367346,
+            "precision": 0.7605177993527508,
+            "negative_predictive_value": 0.3287671232876712,
+            "brier_score": 0.2073298953154887,
+            "confusion_matrix": {
+              "tn": 24,
+              "fp": 74,
+              "fn": 49,
+              "tp": 235
+            }
+          }
+        },
+        {
+          "group": "Age 15\u201319",
+          "n": 290,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6383888388838885,
+            "average_precision": 0.7730071040565751,
+            "accuracy": 0.696551724137931,
+            "balanced_accuracy": 0.609023402340234,
+            "sensitivity": 0.8316831683168316,
+            "specificity": 0.38636363636363635,
+            "precision": 0.7567567567567568,
+            "negative_predictive_value": 0.5,
+            "brier_score": 0.21341023267854922,
+            "confusion_matrix": {
+              "tn": 34,
+              "fp": 54,
+              "fn": 34,
+              "tp": 168
+            }
+          }
+        },
+        {
+          "group": "Age 20+",
+          "n": 1067,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7094587898864633,
+            "average_precision": 0.7027385895635634,
+            "accuracy": 0.6813495782567948,
+            "balanced_accuracy": 0.679981030040488,
+            "sensitivity": 0.696027633851468,
+            "specificity": 0.6639344262295082,
+            "precision": 0.7107583774250441,
+            "negative_predictive_value": 0.648,
+            "brier_score": 0.22926820345402985,
+            "confusion_matrix": {
+              "tn": 324,
+              "fp": 164,
+              "fn": 176,
+              "tp": 403
+            }
+          }
+        },
+        {
+          "group": "Age missing",
+          "n": 0,
+          "suppressed": true,
+          "metrics": null
+        },
+        {
+          "group": "Treatment line 1",
+          "n": 1269,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6778031634446398,
+            "average_precision": 0.7038204089811585,
+            "accuracy": 0.6524822695035462,
+            "balanced_accuracy": 0.6529324629676123,
+            "sensitivity": 0.6485714285714286,
+            "specificity": 0.6572934973637962,
+            "precision": 0.699537750385208,
+            "negative_predictive_value": 0.603225806451613,
+            "brier_score": 0.23231082537591669,
+            "confusion_matrix": {
+              "tn": 374,
+              "fp": 195,
+              "fn": 246,
+              "tp": 454
+            }
+          }
+        },
+        {
+          "group": "Treatment line 2",
+          "n": 381,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5224836601307189,
+            "average_precision": 0.8141809631649258,
+            "accuracy": 0.7900262467191601,
+            "balanced_accuracy": 0.5320915032679738,
+            "sensitivity": 0.9575163398692811,
+            "specificity": 0.10666666666666667,
+            "precision": 0.8138888888888889,
+            "negative_predictive_value": 0.38095238095238093,
+            "brier_score": 0.1745161130619421,
+            "confusion_matrix": {
+              "tn": 8,
+              "fp": 67,
+              "fn": 13,
+              "tp": 293
+            }
+          }
+        },
+        {
+          "group": "Treatment line 3",
+          "n": 87,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.528537455410226,
+            "average_precision": 0.6788415477684389,
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.5,
+            "sensitivity": 1.0,
+            "specificity": 0.0,
+            "precision": 0.6666666666666666,
+            "negative_predictive_value": null,
+            "brier_score": 0.27448595605899684,
+            "confusion_matrix": {
+              "tn": 0,
+              "fp": 29,
+              "fn": 0,
+              "tp": 58
+            }
+          }
+        },
+        {
+          "group": "Sex F",
+          "n": 899,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.7024568496345825,
+            "average_precision": 0.7600527043248898,
+            "accuracy": 0.6952169076751946,
+            "balanced_accuracy": 0.6813040999326181,
+            "sensitivity": 0.7467889908256881,
+            "specificity": 0.615819209039548,
+            "precision": 0.7495395948434622,
+            "negative_predictive_value": 0.6123595505617978,
+            "brier_score": 0.21808912701910876,
+            "confusion_matrix": {
+              "tn": 218,
+              "fp": 136,
+              "fn": 138,
+              "tp": 407
+            }
+          }
+        },
+        {
+          "group": "Sex M",
+          "n": 840,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.6669290865384616,
+            "average_precision": 0.7184252103666647,
+            "accuracy": 0.6702380952380952,
+            "balanced_accuracy": 0.6399038461538462,
+            "sensitivity": 0.7673076923076924,
+            "specificity": 0.5125,
+            "precision": 0.7189189189189189,
+            "negative_predictive_value": 0.5754385964912281,
+            "brier_score": 0.22578099450305594,
+            "confusion_matrix": {
+              "tn": 164,
+              "fp": 156,
+              "fn": 121,
+              "tp": 399
+            }
+          }
+        },
+        {
+          "group": "TDF-3TC-DTG",
+          "n": 1066,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.680469844361409,
+            "average_precision": 0.6853950335019754,
+            "accuracy": 0.648217636022514,
+            "balanced_accuracy": 0.6518278978028531,
+            "sensitivity": 0.5778175313059034,
+            "specificity": 0.7258382642998028,
+            "precision": 0.6991341991341992,
+            "negative_predictive_value": 0.609271523178808,
+            "brier_score": 0.23711087251602114,
+            "confusion_matrix": {
+              "tn": 368,
+              "fp": 139,
+              "fn": 236,
+              "tp": 323
+            }
+          }
+        },
+        {
+          "group": "Other / missing regimen",
+          "n": 673,
+          "suppressed": false,
+          "metrics": {
+            "roc_auc": 0.5319992426214765,
+            "average_precision": 0.7640678224098969,
+            "accuracy": 0.7384843982169391,
+            "balanced_accuracy": 0.519188894937398,
+            "sensitivity": 0.9545454545454546,
+            "specificity": 0.08383233532934131,
+            "precision": 0.7594339622641509,
+            "negative_predictive_value": 0.3783783783783784,
+            "brier_score": 0.19756013442892617,
+            "confusion_matrix": {
+              "tn": 14,
+              "fp": 153,
+              "fn": 23,
+              "tp": 483
+            }
+          }
+        }
+      ]
+    }
+  },
+  "split": {
+    "train": {
+      "rows": 6620,
+      "facilities": 755,
+      "positive_rate": 0.5842900302114804
+    },
+    "calibration": {
+      "rows": 518,
+      "facilities": 94,
+      "positive_rate": 0.5907335907335908
+    },
+    "cutoff": {
+      "rows": 1057,
+      "facilities": 95,
+      "positive_rate": 0.6083254493850521
+    },
+    "legacy_test": {
+      "rows": 1739,
+      "facilities": 236,
+      "positive_rate": 0.6124209315698678
+    }
+  },
+  "active_model_legacy_test": {
+    "roc_auc": 0.7442658920884357,
+    "average_precision": 0.8029073707481361,
+    "accuracy": 0.6958021851638873,
+    "balanced_accuracy": 0.6827370752706148,
+    "sensitivity": 0.7408450704225352,
+    "specificity": 0.6246290801186943,
+    "precision": 0.7571976967370442,
+    "negative_predictive_value": 0.6040172166427547,
+    "brier_score": 0.19583678444092295,
+    "confusion_matrix": {
+      "tn": 421,
+      "fp": 253,
+      "fn": 276,
+      "tp": 789
+    },
+    "f1": 0.7489321309919317
+  },
+  "selected_vs_active_paired_auc": {
+    "method": "Paired facility-cluster percentile bootstrap",
+    "replicates": 500,
+    "difference": -0.0005126704838328555,
+    "difference_95_interval": [
+      -0.0034902561117602896,
+      0.0026444923196581134
+    ],
+    "limitation": "Reused cohort; conditions on fitted models and excludes selection uncertainty."
+  },
+  "limitations": [
+    "One fixed configuration per family; results do not establish the globally best algorithm.",
+    "Repeated development and previously inspected legacy test; no independent validation.",
+    "Shared numerical/one-hot representation; CatBoost native categorical handling was not tested.",
+    "CV spread is not a confidence interval. Selection uncertainty is not included in the paired bootstrap.",
+    "Research-only comparison. Active application model was not changed."
+  ]
+}

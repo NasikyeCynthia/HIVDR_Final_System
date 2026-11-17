@@ -1,0 +1,326 @@
+{
+  "Random forest (active configuration)": {
+    "threshold": 0.65,
+    "cutoff_partition": {
+      "roc_auc": 0.7075998677695886,
+      "average_precision": 0.7794439576666168,
+      "accuracy": 0.6641438032166509,
+      "balanced_accuracy": 0.6697545472986679,
+      "sensitivity": 0.6438569206842923,
+      "specificity": 0.6956521739130435,
+      "precision": 0.7666666666666667,
+      "negative_predictive_value": 0.5570599613152805,
+      "brier_score": 0.20919835777864682,
+      "confusion_matrix": {
+        "tn": 288,
+        "fp": 126,
+        "fn": 229,
+        "tp": 414
+      },
+      "f1": 0.6999154691462384
+    },
+    "fit_seconds": 2.7612737999988894,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 1.2736580986030466,
+      "intercept": 0.4896571441775474
+    }
+  },
+  "CatBoost": {
+    "threshold": 0.64,
+    "cutoff_partition": {
+      "roc_auc": 0.7089897897085673,
+      "average_precision": 0.7752178952804184,
+      "accuracy": 0.6613055818353831,
+      "balanced_accuracy": 0.6682819813525067,
+      "sensitivity": 0.6360808709175739,
+      "specificity": 0.7004830917874396,
+      "precision": 0.7673545966228893,
+      "negative_predictive_value": 0.5534351145038168,
+      "brier_score": 0.2085926341512298,
+      "confusion_matrix": {
+        "tn": 290,
+        "fp": 124,
+        "fn": 234,
+        "tp": 409
+      },
+      "f1": 0.6955782312925171
+    },
+    "fit_seconds": 3.172309799998402,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 0.9062747012044449,
+      "intercept": 0.49423633697546365
+    }
+  },
+  "Gradient boosting": {
+    "threshold": 0.53,
+    "cutoff_partition": {
+      "roc_auc": 0.7047617974320253,
+      "average_precision": 0.7763418847931212,
+      "accuracy": 0.6830652790917692,
+      "balanced_accuracy": 0.659499177316474,
+      "sensitivity": 0.7682737169517885,
+      "specificity": 0.5507246376811594,
+      "precision": 0.7264705882352941,
+      "negative_predictive_value": 0.6047745358090185,
+      "brier_score": 0.20998346638280396,
+      "confusion_matrix": {
+        "tn": 228,
+        "fp": 186,
+        "fn": 149,
+        "tp": 494
+      },
+      "f1": 0.7467876039304611
+    },
+    "fit_seconds": 8.128726499999175,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 1.0539061943216748,
+      "intercept": 0.1903506824243087
+    }
+  },
+  "LightGBM": {
+    "threshold": 0.64,
+    "cutoff_partition": {
+      "roc_auc": 0.7167357871090374,
+      "average_precision": 0.7855055980274985,
+      "accuracy": 0.6660359508041628,
+      "balanced_accuracy": 0.6734603797116476,
+      "sensitivity": 0.6391912908242613,
+      "specificity": 0.7077294685990339,
+      "precision": 0.7725563909774437,
+      "negative_predictive_value": 0.5580952380952381,
+      "brier_score": 0.20609229738073276,
+      "confusion_matrix": {
+        "tn": 293,
+        "fp": 121,
+        "fn": 232,
+        "tp": 411
+      },
+      "f1": 0.6995744680851064
+    },
+    "fit_seconds": 0.6250550000004296,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 0.7884146375005843,
+      "intercept": 0.4422228992842562
+    }
+  },
+  "XGBoost": {
+    "threshold": 0.62,
+    "cutoff_partition": {
+      "roc_auc": 0.7085991089473407,
+      "average_precision": 0.7807806931806414,
+      "accuracy": 0.6622516556291391,
+      "balanced_accuracy": 0.6621775944583437,
+      "sensitivity": 0.6625194401244168,
+      "specificity": 0.6618357487922706,
+      "precision": 0.7526501766784452,
+      "negative_predictive_value": 0.5580448065173116,
+      "brier_score": 0.20846775733775086,
+      "confusion_matrix": {
+        "tn": 274,
+        "fp": 140,
+        "fn": 217,
+        "tp": 426
+      },
+      "f1": 0.7047146401985112
+    },
+    "fit_seconds": 0.8935940000010305,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 0.8044760616495688,
+      "intercept": 0.22491356582899427
+    }
+  },
+  "Histogram gradient boosting": {
+    "threshold": 0.57,
+    "cutoff_partition": {
+      "roc_auc": 0.7074871713961578,
+      "average_precision": 0.7761507179249235,
+      "accuracy": 0.6811731315042573,
+      "balanced_accuracy": 0.664395834742038,
+      "sensitivity": 0.7418351477449455,
+      "specificity": 0.5869565217391305,
+      "precision": 0.7361111111111112,
+      "negative_predictive_value": 0.5941320293398533,
+      "brier_score": 0.20880927625598286,
+      "confusion_matrix": {
+        "tn": 243,
+        "fp": 171,
+        "fn": 166,
+        "tp": 477
+      },
+      "f1": 0.7389620449264136
+    },
+    "fit_seconds": 1.636440100000982,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 0.891013988592764,
+      "intercept": 0.4963004106317849
+    }
+  },
+  "Neural network (MLP)": {
+    "threshold": 0.59,
+    "cutoff_partition": {
+      "roc_auc": 0.7112493519958527,
+      "average_precision": 0.7725437718620499,
+      "accuracy": 0.674550614947966,
+      "balanced_accuracy": 0.6662647162680972,
+      "sensitivity": 0.7045101088646968,
+      "specificity": 0.6280193236714976,
+      "precision": 0.7462932454695222,
+      "negative_predictive_value": 0.5777777777777777,
+      "brier_score": 0.20786964958173537,
+      "confusion_matrix": {
+        "tn": 260,
+        "fp": 154,
+        "fn": 190,
+        "tp": 453
+      },
+      "f1": 0.7248
+    },
+    "fit_seconds": 9.568180800000846,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 1.0402940370164115,
+      "intercept": 0.22769997431268238
+    }
+  },
+  "SVM (RBF)": {
+    "threshold": 0.59,
+    "cutoff_partition": {
+      "roc_auc": 0.7094011314715893,
+      "average_precision": 0.7760417733176866,
+      "accuracy": 0.674550614947966,
+      "balanced_accuracy": 0.6740069571227865,
+      "sensitivity": 0.6765163297045101,
+      "specificity": 0.6714975845410628,
+      "precision": 0.7618213660245184,
+      "negative_predictive_value": 0.5720164609053497,
+      "brier_score": 0.2082229841857589,
+      "confusion_matrix": {
+        "tn": 278,
+        "fp": 136,
+        "fn": 208,
+        "tp": 435
+      },
+      "f1": 0.7166392092257001
+    },
+    "fit_seconds": 8.451927500000238,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 1.032569064420568,
+      "intercept": 0.531751420751682
+    }
+  },
+  "Logistic regression": {
+    "threshold": 0.57,
+    "cutoff_partition": {
+      "roc_auc": 0.7004305001465052,
+      "average_precision": 0.7599725875810601,
+      "accuracy": 0.6660359508041628,
+      "balanced_accuracy": 0.6575457735103418,
+      "sensitivity": 0.6967340590979783,
+      "specificity": 0.6183574879227053,
+      "precision": 0.7392739273927392,
+      "negative_predictive_value": 0.5676274944567627,
+      "brier_score": 0.21127435869884073,
+      "confusion_matrix": {
+        "tn": 256,
+        "fp": 158,
+        "fn": 195,
+        "tp": 448
+      },
+      "f1": 0.7173738991192954
+    },
+    "fit_seconds": 0.2055663999999524,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 1.1031341224021918,
+      "intercept": 0.5724674097099771
+    }
+  },
+  "AdaBoost": {
+    "threshold": 0.54,
+    "cutoff_partition": {
+      "roc_auc": 0.6844520326669222,
+      "average_precision": 0.7381657716040562,
+      "accuracy": 0.6669820245979187,
+      "balanced_accuracy": 0.6557426315354505,
+      "sensitivity": 0.7076205287713841,
+      "specificity": 0.6038647342995169,
+      "precision": 0.7350565428109854,
+      "negative_predictive_value": 0.5707762557077626,
+      "brier_score": 0.21717776973389497,
+      "confusion_matrix": {
+        "tn": 250,
+        "fp": 164,
+        "fn": 188,
+        "tp": 455
+      },
+      "f1": 0.7210776545166403
+    },
+    "fit_seconds": 4.542875900000581,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 1.4583994834231002,
+      "intercept": 0.0594633379099363
+    }
+  },
+  "Nearest neighbours": {
+    "threshold": 0.66,
+    "cutoff_partition": {
+      "roc_auc": 0.698935394925658,
+      "average_precision": 0.7752726825032348,
+      "accuracy": 0.6404919583727531,
+      "balanced_accuracy": 0.6589169127204153,
+      "sensitivity": 0.5738724727838258,
+      "specificity": 0.7439613526570048,
+      "precision": 0.7768421052631579,
+      "negative_predictive_value": 0.5292096219931272,
+      "brier_score": 0.21236060041245305,
+      "confusion_matrix": {
+        "tn": 308,
+        "fp": 106,
+        "fn": 274,
+        "tp": 369
+      },
+      "f1": 0.6601073345259392
+    },
+    "fit_seconds": 0.0015120999996725004,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 0.986432010350377,
+      "intercept": 0.19683046784420533
+    }
+  },
+  "Gaussian naive Bayes": {
+    "threshold": 0.56,
+    "cutoff_partition": {
+      "roc_auc": 0.6721023884118076,
+      "average_precision": 0.7484818542877876,
+      "accuracy": 0.6575212866603595,
+      "balanced_accuracy": 0.6449557103252417,
+      "sensitivity": 0.702954898911353,
+      "specificity": 0.5869565217391305,
+      "precision": 0.7255216693418941,
+      "negative_predictive_value": 0.5599078341013825,
+      "brier_score": 0.22311861432861432,
+      "confusion_matrix": {
+        "tn": 243,
+        "fp": 171,
+        "fn": 191,
+        "tp": 452
+      },
+      "f1": 0.7140600315955766
+    },
+    "fit_seconds": 0.012953200000993093,
+    "warnings": {},
+    "calibration": {
+      "coefficient": 0.05815135872171552,
+      "intercept": 0.717418301590161
+    }
+  }
+}
