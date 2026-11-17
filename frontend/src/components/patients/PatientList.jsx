@@ -1,4 +1,4 @@
-import { PROFILE_STATES } from '../../utils/profileStatus.js';
+import { PROFILE_STATES, profileState } from '../../utils/profileStatus.js';
 import { eligibilityLabel } from '../../utils/eligibility.js';
 import { useEffect, useState } from 'react';
 import PatientTable from './PatientTable.jsx';
@@ -22,6 +22,7 @@ export default function PatientList({ patients, tab = 'overview', initialFilter 
   const safeInitialFilter = isNurse && nurseHiddenFilters.has(initialFilter) ? '' : initialFilter;
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState(safeInitialFilter);
+  const [profileFilter, setProfileFilter] = useState('');
   const [lineFilter, setLineFilter] = useState('');
   const [regimenFilter, setRegimenFilter] = useState('');
   const [page, setPage] = useState(0);
@@ -30,7 +31,13 @@ export default function PatientList({ patients, tab = 'overview', initialFilter 
   const [recordFields, setRecordFields] = useState({});
   const [tableError, setTableError] = useState('');
   const visibleColumns = selectedColumns === null ? availableColumns : availableColumns.filter(field=>selectedColumns.includes(field));
-  const filtered = patients.filter(patient => matchesFilter(patient, filter) && matchesFilter(patient, lineFilter) && matchesFilter(patient, regimenFilter) && [patient.name, patient.external_id, patient.facility, patient.owner_name].join(' ').toLowerCase().includes(search.toLowerCase()));
+  const matchingPatients = patients.filter(patient => matchesFilter(patient, filter) && matchesFilter(patient, lineFilter) && matchesFilter(patient, regimenFilter) && [patient.name, patient.external_id, patient.facility, patient.owner_name].join(' ').toLowerCase().includes(search.toLowerCase()));
+  const profileCounts = datasetView ? matchingPatients.reduce((counts, patient) => {
+    const key = profileState(patient);
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {}) : {};
+  const filtered = datasetView && profileFilter ? matchingPatients.filter(patient => profileState(patient) === profileFilter) : matchingPatients;
   const pages = Math.max(1, Math.ceil(filtered.length / 25));
   const safePage = Math.min(page, pages - 1);
   const pagePatients = filtered.slice(safePage * 25, safePage * 25 + 25);
@@ -76,7 +83,10 @@ export default function PatientList({ patients, tab = 'overview', initialFilter 
     {datasetView && <details className="column-picker"><summary>Choose dataset columns ({visibleColumns.length} selected)</summary><p className="tiny muted">All dataset columns are shown by default in their original order. Risk and eligibility are added after the source columns. Hide fields here if needed; their dataset order is retained.{isNurse?' Laboratory and committee fields are restricted for nurse accounts.':''}</p><div className="column-picker-actions"><button type="button" className="btn secondary small" onClick={() => setSelectedColumns(null)}>Show all in dataset order</button><button type="button" className="btn secondary small" onClick={() => setSelectedColumns([])}>Unselect all</button></div><div className="column-picker-grid">{availableColumns.map(column => <label key={column}><input type="checkbox" checked={visibleColumns.includes(column)} onChange={() => toggleColumn(column)} />{column}</label>)}</div></details>}
     <div className="toolbar"><input aria-label="Search patients" type="search" placeholder="Search patient, ID, facility or care worker" value={search} onChange={event => { setSearch(event.target.value); setPage(0); }} /><select aria-label="Filter records" value={filter} onChange={event => { setFilter(event.target.value); setPage(0); }}><option value="">All records</option>{[...new Set([...filterOptions, safeInitialFilter].filter(Boolean))].map(value => <option value={value} key={value}>{value === 'missing-pre' ? 'Incomplete patient profiles' : value === 'missing-post' ? 'Incomplete post-decision follow-up' : value === 'discussion-pending' ? 'Discussion pending' : value === 'discussion-done' ? 'Discussion done' : value === 'discussion-blank' ? 'Discussion status blank' : value === 'sample-type-blank' ? 'Sample type blank' : value === 'amplified-blank' ? 'Amplified value blank' : value === 'returned' ? 'Rejected or deferred at CPHL' : value === 'awaiting-receipt' ? 'Collected, not yet received at CPHL' : value === 'at-dr-lab' ? 'At DR laboratory' : value === 'lab-problem' ? 'Sample quality problems' : value === 'flagged' ? 'Flagged: high risk of resistance' : value.startsWith('failing:') ? 'Failing: ' + ({child:'children <15, 1st line',adolescent:'adolescents 15–19, 1st line',adult:'adults 20+, 1st line',second:'2nd line',third:'3rd line'})[value.slice(8)] : value.startsWith('risk:') ? 'Risk: ' + value.slice(5) : value.startsWith('elig:') ? 'Eligibility: ' + eligibilityLabel(value.slice(5)) : value.replaceAll('-', ' ')}</option>)}</select>{tab === 'risk' && <><select aria-label="Filter treatment line" value={lineFilter} onChange={event => { setLineFilter(event.target.value); setPage(0); }}><option value="">All treatment lines</option>{lineOptions.map(value => <option key={value} value={`line:${value}`}>Line {value}</option>)}</select><select aria-label="Filter regimen" value={regimenFilter} onChange={event => { setRegimenFilter(event.target.value); setPage(0); }}><option value="">All regimens</option>{regimenOptions.map(value => <option key={value} value={`regimen:${value}`}>{value}</option>)}</select></>}<span className="tiny muted">{filtered.length} matches</span></div>
     {tableError && <p className="notice error">Could not load dataset columns: {tableError}</p>}
-    {datasetView && <div className="profile-legend" aria-label="Patient profile row colours">{Object.entries(PROFILE_STATES).map(([key,state]) => <span key={key} className={`profile-legend-item profile-${key}`}><span className="profile-legend-dot" aria-hidden="true" />{state.label}</span>)}</div>}
+    {datasetView && <div className="profile-legend" role="group" aria-label="Filter patients by profile status">
+      <button type="button" className="profile-legend-item" aria-pressed={!profileFilter} onClick={() => { setProfileFilter(''); setPage(0); }}>All profile statuses <span className="profile-filter-count">{matchingPatients.length}</span></button>
+      {Object.entries(PROFILE_STATES).map(([key,state]) => <button type="button" key={key} className={`profile-legend-item profile-${key}`} aria-pressed={profileFilter === key} onClick={() => { setProfileFilter(current => current === key ? '' : key); setPage(0); }}><span className="profile-legend-dot" aria-hidden="true" />{state.label}<span className="profile-filter-count">{profileCounts[key] || 0}</span></button>)}
+    </div>}
     <section className="card"><PatientTable patients={pagePatients} tab={tab} datasetView={datasetView} columns={visibleColumns} recordFields={recordFields} /><div className="card-footer"><span>Page {safePage + 1} of {pages}</span><div><button className="text-link" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>← Previous</button> &nbsp; <button className="text-link" disabled={safePage === pages - 1} onClick={() => setPage(safePage + 1)}>Next →</button></div></div></section>
   </>;
 }
