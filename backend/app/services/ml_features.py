@@ -45,11 +45,11 @@ def extract(raw,patient=None):
             'sex':str(patient.get('sex',raw.get('sex','')) or '').upper(),'regimen':regimen}
 def transform(features,spec):
     values=[]
-    for name in NUMERIC:
-        s=spec['numeric'][name];value=features.get(name)
+    for name,s in spec['numeric'].items():
+        value=features.get(name)
         values.extend([((s['median'] if value is None else value)-s['mean'])/s['scale'],int(value is None)])
-    for name in CATEGORICAL:
-        categories=spec['categorical'][name];value=features.get(name) or '__MISSING__'
+    for name,categories in spec['categorical'].items():
+        value=features.get(name) or '__MISSING__'
         if value not in categories:value='__OTHER__'
         values.extend(int(value==c) for c in categories)
     return values

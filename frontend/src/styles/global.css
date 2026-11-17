@@ -153,3 +153,10 @@ body{min-height:100vh;overflow-y:auto}
 .profile-legend button.profile-legend-item[aria-pressed=true]{background:var(--profile-row-hover,#e2e8f0);border-color:var(--profile-accent,#475569);box-shadow:inset 0 0 0 1px var(--profile-accent,#475569)}
 .profile-legend button.profile-legend-item:focus-visible{outline:2px solid var(--profile-accent,#475569);outline-offset:3px}
 .profile-filter-count{font-size:11px;font-variant-numeric:tabular-nums;opacity:.8}
+
+.risk-output-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:12px}
+.risk-output-guide>div{padding:16px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.risk-output-guide h2{font-size:14px;margin:0 0 8px}.risk-output-guide p{font-size:12px;line-height:1.6;margin:0;color:#526976}
+.risk-research-details{margin:20px 0;border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px}
+.risk-research-details>summary{font-weight:600;font-size:13px;cursor:pointer}.risk-research-details[open]>summary{margin-bottom:16px}
+@media(max-width:900px){.risk-output-guide{grid-template-columns:1fr}}

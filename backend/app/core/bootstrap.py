@@ -28,6 +28,9 @@ def initialize():
         stale = con.execute("SELECT count(*) FROM episodes WHERE eligibility_json IS NULL OR eligibility_json NOT LIKE ? OR risk_json IS NULL OR risk_json NOT LIKE ?", ('%' + RULE_VERSION + '%', '%' + SCORE_VERSION + '%')).fetchone()[0]
         if stale:
             refresh_all(con)
+    # An ML model update refreshes only its cached estimates, preserving clinical state.
+    from ..services.ml_service import refresh_cached_predictions
+    refresh_cached_predictions()
 
 def seed(con):
     source = ROOT / 'data' / 'synthetic_patients.csv'

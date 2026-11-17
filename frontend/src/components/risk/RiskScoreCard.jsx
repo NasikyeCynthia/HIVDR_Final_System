@@ -8,12 +8,12 @@ export function RiskBadge({ risk }) {
 }
 export default function RiskScoreCard({ risk }) {
   if (!risk?.factors) return null;
-  return <Card title="Rules-based risk score" subtitle={`Prototype points · ${risk.version}`}>
+  return <Card title="Risk score (points)" subtitle="Priority flag for review">
     <div className="split-heading"><RiskBadge risk={risk} /><span className="tiny muted">{risk.known_total} points{risk.complete ? '' : ' known so far'}</span></div>
-    <p className={`notice ${risk.flagged ? 'error' : 'info'}`} style={{ marginTop: 14 }}>{risk.reason}</p>
+    <p className={`notice ${risk.flagged ? 'error' : 'info'}`} style={{ marginTop: 14 }}>{risk.complete ? 'All three scoring inputs are recorded.' : `Missing scoring inputs: ${(risk.missing_inputs || []).join(', ')}.`}</p>
     <div className="table-wrap"><table><thead><tr><th>Factor</th><th>This patient</th><th>Rule</th><th>Points</th></tr></thead><tbody>
       {risk.factors.map(f => <tr key={f.name}><td>{f.name}</td><td>{f.value ?? 'Not recorded'}</td><td className="tiny">{f.rule}</td><td><b>{f.points ?? '—'}</b> / {f.max}</td></tr>)}
     </tbody></table></div>
-    <p className="tiny muted">Low 0 · Intermediate 30–59 · High 60–180. A known score of 60 or more flags high risk even if another input is missing. {risk.notice}</p>
+    <p className="tiny muted">Points are not a percentage. Low 0 · Intermediate 30–59 · High 60–180. A known score of 60 or more flags high risk even if another input is missing. {risk.notice}</p>
   </Card>;
 }

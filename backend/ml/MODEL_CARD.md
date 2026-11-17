@@ -1,99 +1,64 @@
-# HIVDR panel model â€” research baseline
+# Active HIVDR history model — research estimate
 
-The included model predicts **any documented low-level-or-greater resistance across a fully observed 12-drug RT/IN panel** among referred and tested patients. It does not diagnose resistance, determine treatment, or establish performance in untested low-risk patients.
+Activated on 17 November 2026 as `hivdr-panel-v2-history`. The retrained forest from `experiments/history-v2/model.json` is selected by a fingerprint-pinned `artifacts/active_model.json`. The original `artifacts/model.json` remains unchanged for rollback and historical comparisons.
 
-## Data and outcome
+## Purpose and target
 
-- Original input: 39,711 records and 119 columns; no synthetic rows used.
-- Eligible cohort: 9,934 amplified records with valid results for all 12 panel drugs.
-- Panel: BIC, CAB, DTG, RAL, 3TC, ABC, AZT, TDF, DOR, EFV, ETR and NVP.
-- Positive: at least one Low-Level, Intermediate or High-Level Resistance result in that panel.
-- Negative: every panel result is Susceptible or Potential Low-Level Resistance.
-- Missing outcomes and unsuccessful tests are excluded rather than labelled negative.
-- PI-only resistance is outside this target.
+Estimate the probability of **any low-level-or-greater resistance across the fully observed 12-drug RT/IN panel** among referred and tested patients. This is a research estimate that can support exploration of prioritisation; it is not a validated standalone clinical prioritisation policy, a diagnosis, testing eligibility or a treatment recommendation.
 
-## Inputs
+Panel: BIC, CAB, DTG, RAL, 3TC, ABC, AZT, TDF, DOR, EFV, ETR, NVP. Target 1 means any Low-Level, Intermediate or High-Level Resistance result; target 0 means every panel result is Susceptible or Potential Low-Level Resistance. PI-only resistance is not included in the target. Failed amplification or incomplete panel outcomes were excluded, not labelled negative.
 
-Viral load leading to DRT, age, treatment line, regimen, sex, ART duration derived at the index sample, and dated prior viral-load observations. Only prior observations dated on or before the sample are included. Missing non-critical numerical inputs use training-set medians with missingness indicators; categorical levels are learned from training records.
+## Feature variables
 
-There is no adherence column in the original data, so adherence is not an ML input. Mutation calls, resistance results, resistance indicators, committee decisions, post-decision viral loads and psychosocial assessments are excluded from the predictors. Facility is used for splitting, not as a model feature.
+There are 31 numeric/indicator variables plus two categorical variables before encoding:
 
-## Evaluation
+- Original numeric variables: log-transformed index VL, age, treatment line, ART duration at sample collection, log-transformed latest dated prior VL, prior VL observation count.
+- Categorical variables: sex and regimen.
+- Additional history variables: years on the indexed regimen, time since the latest dated prior VL, maximum and mean log prior VL, fraction of prior results ≥1000, log change from the latest prior VL to index VL, consecutive prior results ≥1000, duration of ongoing non-suppression.
+- Seventeen current-regimen drug-component indicators: DTG, BIC, CAB, RAL, LPV, ATV, DRV, EFV, NVP, DOR, ETR, TDF, TAF, AZT, ABC, 3TC, FTC. The artifact preprocessing defines the exact feature schema.
 
-Facilities are kept disjoint across the partitions. Stable person identifiers were not available; this reduces repeated-record leakage within hospitals but cannot exclude transfers across facilities.
+For exact machine-readable names and order, inspect the artifact preprocessing and `app/services/ml_history_features.py`. Indicators describe drugs in the indexed regimen, not the dataset's historical exposure columns. Missing optional numeric inputs use stored training medians with missingness indicators; categorical inputs use stored categories. Viral load and treatment line are required for a live estimate. Synthetic datasets are not scored.
 
-| Partition | Records | Facilities |
+When a sample date is recorded, the predictor takes index VL, age, sex, treatment line and regimen from the effective source snapshot (original values plus audited corrections), rather than later core-table follow-up values. Dated prior observations after the sample are excluded. Training and serving share the same extractor. Adherence, psychosocial results, mutations, resistance results, committee decisions and post-decision outcomes are not predictors.
+
+## Training and selection
+
+The source CSV has 39,711 records; the amplified, complete-panel cohort has 9,934. Four-fold facility-grouped cross-validation within 6,620 training records compared seven fixed configurations. Preprocessing was fitted separately within each training fold.
+
+The selected history model is a 300-tree random forest, maximum depth 12, minimum leaf size 8, balanced class weights. Its mean development-fold AUROC was 0.729, versus 0.717 for history-input logistic regression. The original-input original-configuration forest had mean development-fold AUROC 0.714 in the preceding experiment.
+
+Calibration used 518 records from 94 separate facilities. The research cutoff, 0.62, maximised balanced accuracy on 1,057 other records from 95 facilities. Selection, calibration and cutoff fitting did not use legacy-test labels. All four partitions have disjoint facilities.
+
+## Retrospective legacy comparison
+
+The 1,739-record test cohort had already been examined during earlier development and audits. These are exploratory internal comparison results, **not a fresh independent validation**. Feature-family exploration followed the first retraining experiment. No new clinical records were added.
+
+| Measure | Active retrained model | Original model |
 | --- | ---: | ---: |
-| Training | 6,620 | 755 |
-| Validation | 1,575 | 189 |
-| Held-out test | 1,739 | 236 |
+| AUROC | 0.744 | 0.721 |
+| Average precision | 0.803 | 0.788 |
+| Accuracy | 69.6% | 66.8% |
+| Balanced accuracy | 68.3% | 67.0% |
+| Sensitivity | 74.1% | 66.0% |
+| Specificity | 62.5% | 68.0% |
+| Precision | 75.7% | 76.5% |
+| Negative predictive value | 60.4% | 55.9% |
+| Brier score | 0.196 | 0.203 |
 
-| Candidate | Validation AUROC |
-| --- | ---: |
-| Logistic Regression | 0.681 |
-| Random Forest | 0.700 |
+Active confusion matrix: TP 789, FN 276, TN 421, FP 253. There were 86 fewer missed positive cases and 37 additional false positives. A paired 500-replicate facility bootstrap gave an AUROC-difference interval of +0.011 to +0.036; this does not incorporate model/feature-selection uncertainty.
 
-Random Forest was selected using validation AUROC. Probability calibration and the research threshold were fitted on validation data. The held-out test was not used for model selection, calibration or threshold choice.
+TDF-3TC-DTG sensitivity is 53.8%, and third-line specificity remains 0%. A below-cutoff percentage does not rule out resistance. Performance in untested clinic populations and prospective clinical utility remain unestablished. Stable patient IDs were unavailable, so cross-facility transfers cannot be excluded.
 
-| Held-out measure | Result |
-| --- | ---: |
-| AUROC | 0.721 |
-| Average precision | 0.788 |
-| Accuracy | 66.8% |
-| Sensitivity | 66.0% |
-| Specificity | 68.0% |
-| Balanced accuracy | 67.0% |
-| Brier score | 0.203 |
-| Validation-selected threshold | 0.64 |
+## Runtime and cached predictions
 
-Confusion matrix at that threshold: 703 true positives, 458 true negatives, 216 false positives and 362 false negatives. This sensitivity is insufficient to use the model as the sole gatekeeper for clinical screening or referral.
+`ml_service.py` validates the selected weight fingerprint and feature schema. Runtime inference uses only Python's standard library. `ml_history_features.py` is shared with training through a compatibility import in `ml/history_features.py`. The original feature transform now follows the artifact's stored feature order.
 
-## Runtime and reproducibility
+Prediction metadata records the model version, weight fingerprint, feature schema and pipeline version. Startup refreshes stale ML caches in short batches. Computation occurs outside database write transactions; source-version and risk-snapshot checks prevent overwriting concurrent edits. Only `episodes.risk_json.ml` and `episodes.risk_ml` are replaced. Points scores, eligibility, source records, laboratory interpretations and decisions are preserved.
 
-`artifacts/model.json` contains the forest, preprocessing and calibration parameters. Runtime inference uses Python's standard library, so installing scikit-learn in the running backend is unnecessary. Exported inference was compared with the fitted sklearn model on all held-out cases and agreed within 1e-8 probability.
+To roll back, select `{"model":"v1"}` in `ml/artifacts/active_model.json` and restart the backend. Startup will recalculate cached probabilities for that version. Restoring the original selector is a model rollback, not retraining.
 
-To retrain in a separate research environment, install `ml/requirements-training.txt`, then from `backend` run:
+## Evidence and limitations
 
-```powershell
-python ml/train_model.py "C:\path\to\original.csv"
-```
+Exact training settings, metrics, calibration bins and subgroup checks remain in `experiments/history-v2/`. The active evaluation endpoint identifies these as legacy comparison results and does not attach the old v1 validation report to v2. No independent clinical validation is claimed by activation. A new external/later cohort and clinically agreed operating trade-offs are still needed before clinical deployment.
 
-`artifacts/metrics.json` contains exact metrics, cohort counts, dataset hash and model metadata. No training rows or patient identifiers are embedded in the artifact package. Synthetic demonstration records are not scored in the live model endpoint.
-
-## Limits
-
-This is retrospective evaluation on a selected referred/tested cohort. Prospective external validation, clinical operating thresholds and local governance remain necessary before clinical use. The displayed probability remains separate from the project's rules-based risk score and the clinician's decision. Global feature importance is not an explanation of an individual patient's prediction.
-
-## Method references
-
-- Stanford HIVdb interpretation categories: https://hivdb.stanford.edu/page/release-notes/
-- Scikit-learn leakage prevention: https://scikit-learn.org/stable/common_pitfalls.html
-- Grouped evaluation: https://scikit-learn.org/stable/modules/cross_validation.html
-
-## Additional frozen-model audit
-
-`validate_model.py` reproduces the original cohort and facility splits, verifies the exact CSV hash and original held-out metrics, and evaluates the installed artifact without refitting or changing its cutoff. It exports aggregate results only; patient rows and facility names are not exported.
-
-```powershell
-python ml/validate_model.py "C:\path\to\original.csv" --output ml/artifacts/validation.json --bootstrap 500
-```
-
-The audit adds facility-cluster bootstrap 95% intervals, probability calibration bins, training-prevalence / majority-class baselines, precision, negative predictive value, and descriptive age, sex, treatment-line and regimen subgroup checks. Subgroup metrics are suppressed below 30 records or fewer than 10 positive or negative outcomes. Missing-age and other/missing-regimen groups remain visible.
-
-Intervals describe uncertainty in the fixed model on this selected test population; they do not include model-development uncertainty. Subgroups overlap and do not establish fairness. Reusing the test set for this descriptive audit does not create a new external validation. The validation set was used for model selection, calibration and cutoff choice; future candidate models need a predeclared development protocol and a new untouched evaluation before promotion.
-
-The backend exposes this audit only when its model and dataset fingerprints match the installed artifact. The live model and training artifact are unchanged by the audit.
-
-Methods: https://scikit-learn.org/stable/modules/calibration.html and https://scikit-learn.org/stable/modules/model_evaluation.html
-
-### Audit findings (frozen model)
-
-The 500-replicate facility-cluster audit reproduced all original test metrics. AUROC 95% interval: 0.695–0.746; sensitivity 60.8–70.5%; specificity 62.2–74.1%. Brier score 0.203 compares with 0.238 for a constant training-prevalence prediction. Precision is 76.5% and negative predictive value 55.9% in this referred/tested cohort.
-
-Performance differs substantially by subgroup at the unchanged 0.64 research cutoff. TDF-3TC-DTG sensitivity is 39.5% (221/559 positives detected), while all 87 third-line test records are flagged, yielding 0% specificity in that group. These descriptive results reinforce that this cutoff must not serve as a clinical gatekeeper. No subgroup-specific thresholds were fitted using this test set.
-
-The next model-development phase should define the intended clinical use and acceptable trade-offs with clinicians, then use development data for grouped model/calibration/threshold selection and a new untouched external or temporal evaluation. The present audit does not justify claiming improved model accuracy.
-
-## Retraining experiment
-
-See `RETRAINING.md` and `experiments/history-v2/metrics.json` for the newer history-based research candidate. It improved legacy-test AUROC to 0.744 and sensitivity to 74.1%, with specificity reduced to 62.5%. This candidate is not deployed and has not received fresh independent validation. The active model and all v1 results above remain unchanged.
+For the original model, see `MODEL_CARD_V1.md`. For experiment reproduction, see `RETRAINING.md` and `requirements-retraining.txt`.

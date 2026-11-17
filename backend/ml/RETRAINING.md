@@ -1,6 +1,6 @@
 # HIVDR retraining results — 14 November 2026
 
-A new research candidate improved retrospective performance. It has not replaced the deployed model. No raw patient rows or identifiers are included in these experiment outputs.
+The history-based model improved retrospective performance and was connected as the active research estimate on 17 November 2026. No raw patient rows or identifiers are included in these experiment outputs.
 
 ## What was trained
 
@@ -63,10 +63,10 @@ python ml/retrain_model.py "C:\path\to\original.csv" --features history --output
 
 Output directories must be new/empty. The script refuses the wrong dataset hash and refuses to overwrite the active model. Only aggregate results and model parameters are exported. Portable candidate inference agreed with the fitted estimator within 1.2e-15 on all 1,739 legacy records.
 
-## Deployment status
+## Integration status — 17 November 2026
 
-The app continues to use `backend/ml/artifacts/model.json` (v1). The candidate is not a drop-in replacement: it requires its history extractor and matching feature order, runtime integration, recalculation of cached predictions, and updated model evaluation metadata. Do not copy its JSON over the active artifact.
+The application now selects the history model through `ml/artifacts/active_model.json`, retaining v1 weights for rollback. Its dependency-free extractor is shared between training and runtime. Versioned cached percentages are refreshed at startup, with clinical records and decisions preserved. See `MODEL_CARD.md` for current integration details and limitations.
 
-Before promotion, evaluate the frozen candidate on a genuinely independent later/external cohort and agree the intended use and sensitivity/specificity trade-off with clinical reviewers. The application points score, Stanford API and treatment recommendations were not changed by this retraining.
+Activation is for research demonstration; it does not establish independent clinical validation. The experimental report and candidate artifact retain their original training metadata as provenance. Neither Stanford interpretation nor the points-score formula was changed by this integration.
 
 Method references: https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedGroupKFold.html and https://scikit-learn.org/stable/modules/calibration.html

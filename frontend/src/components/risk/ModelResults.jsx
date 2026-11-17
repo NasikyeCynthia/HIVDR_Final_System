@@ -33,6 +33,7 @@ export default function ModelResults({ patient }) {
           <p className="tiny muted">Any low-level-or-higher resistance in the 12-drug RT/IN panel, estimated for referred and tested patients. PI-only resistance is outside this target.</p>
           <p className="notice info">Research estimate, not a laboratory result. A below-threshold estimate does not rule out resistance or change DR-test eligibility.</p>
           <p className="tiny muted">{ml.model} · {ml.version}. Adherence is used by the points score, not this model.</p>
+          {ml.reference_sample_date && <p className="tiny muted">Input reference: sample collected {ml.reference_sample_date}. Later treatment changes and follow-up results are excluded.</p>}
           {ml.missing_features?.length > 0 && <p className="tiny muted">Missing model inputs: {ml.missing_features.join(', ')}. Saved training values or missing categories were used.</p>}
         </>}
       </div>

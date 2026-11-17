@@ -43,9 +43,7 @@ export default function RiskSummary({ patient, sessions = [], onSaved }) {
   }
 
   return <>
-    <RiskScoreCard risk={patient.risk} />
-    <ModelResults patient={patient} />
-    <Card title="DR-testing eligibility" subtitle={`MoH and WHO criteria · ${e.rule_version || ''}`}>
+    <Card title="DR-test eligibility and next step" subtitle={`MoH and WHO criteria · ${e.rule_version || ''}`}>
       <div className="split-heading"><div><EligibilityBadge patient={patient} />{e.pathway && <p className="tiny muted" style={{ margin: '8px 0 0' }}>{e.pathway}</p>}</div><span className="tiny muted">{e.indication}</span></div>
       {e.next_step && <p className="notice info" style={{ marginTop: 16 }}><b>Next step: </b>{e.next_step}</p>}
       {referred && <p className="notice info">Referred {fmt(String(patient.referred_at).slice(0, 10))}{patient.referral_basis ? ` — ${patient.referral_basis}` : ''}</p>}
@@ -68,6 +66,8 @@ export default function RiskSummary({ patient, sessions = [], onSaved }) {
       {!referred && <div className="form-actions">{e.eligible ? <span>Eligible: the DR test is requested by laboratory staff on the <Link className="text-link" to={`/patients/${patient.id}?tab=laboratory`}>Laboratory tab →</Link></span> : <span className="tiny muted">The laboratory requests the test once the criteria are met.</span>}</div>}
     </Card>
 
+    <RiskScoreCard risk={patient.risk} />
+
     <Card title="Intensive adherence counselling" subtitle="Adherence by pill count: Good ≥95% · Fair 85–94% · Poor <85% · >105% investigate">
       <Feedback error={iac.error} success={iac.success} />
       {sessions.length ? <div className="table-wrap"><table><thead><tr><th>Date</th><th>Adherence</th><th>Rating</th><th>Method</th><th>Barriers / plan</th><th>Recorded by</th><th /></tr></thead><tbody>
@@ -84,7 +84,9 @@ export default function RiskSummary({ patient, sessions = [], onSaved }) {
       </div><p className="tiny muted">Adherence % = pills taken ÷ pills expected × 100. Continue IAC until 3 consecutive sessions are good, then repeat the viral load.</p>
       <div className="form-actions"><button className="btn" disabled={iac.busy}>Record IAC session</button></div></form>}
     </Card>
-
-
+    <details className="risk-research-details">
+      <summary>ML estimate and observed treatment history · research</summary>
+      <ModelResults patient={patient} />
+    </details>
   </>;
 }

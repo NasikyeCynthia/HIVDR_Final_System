@@ -21,7 +21,7 @@ function displayDatasetValue(field, value) {
 export default function PatientTable({ patients, tab = 'overview', datasetView = false, columns = [], recordFields = {} }) {
   const { user } = useAuth();
   const isNurse = false; // all roles may view every column; editing is per role
-  if (datasetView) return <div className="table-wrap" tabIndex={0} aria-label="Complete patient dataset in source column order"><table className="complete-dataset-table"><thead><tr><th>Patient No.</th>{columns.filter(f=>f!=='Patient No.').map(field=><th key={field}>{field}</th>)}<th>Rules-based risk</th><th>DR-test eligibility</th><th>Action</th></tr></thead><tbody>{patients.map(patient=><tr key={patient.id} className={`profile-row profile-${profileState(patient)}`}>
+  if (datasetView) return <div className="table-wrap" tabIndex={0} aria-label="Complete patient dataset in source column order"><table className="complete-dataset-table"><thead><tr><th>Patient No.</th>{columns.filter(f=>f!=='Patient No.').map(field=><th key={field}>{field}</th>)}<th>Risk score (points)</th><th>DR-test eligibility</th><th>Action</th></tr></thead><tbody>{patients.map(patient=><tr key={patient.id} className={`profile-row profile-${profileState(patient)}`}>
     <td className="patient-cell">{recordFields[patient.id]?.['Patient No.']??patient.external_id}</td>
     {columns.filter(f=>f!=='Patient No.').map(field=><td key={field}>{recordFields[patient.id]?String(recordFields[patient.id][field]??'').trim()||'—':'Loading…'}</td>)}
     <td><RiskBadge risk={patient.risk}/>{patient.risk?.total!=null&&<div className="tiny muted">{patient.risk.total} points</div>}</td><td><EligibilityBadge patient={patient}/></td>
@@ -30,7 +30,7 @@ export default function PatientTable({ patients, tab = 'overview', datasetView =
   const empty = !patients.length && <div className="empty">No records match this view.</div>;
   const id = patient => <td className="patient-cell">{patient.external_id}<small>{patient.name}</small></td>;
   // Risk assessment: only the variables used for risk and DR-test eligibility.
-  if (tab === 'risk') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Age(yrs)</th><th>sex</th><th>VL Leading to DR</th><th>Treatment Line at Sample collection</th><th>Drugs</th><th>Adherence (%)</th><th>Rules-based risk</th><th>DR-test eligibility</th><th>ML estimate · research</th><th>Time to failure</th><th /></tr></thead><tbody>{patients.map(patient => <tr key={patient.id}>
+  if (tab === 'risk') return <div className="table-wrap"><table><thead><tr><th>Patient ID / name</th><th>Age(yrs)</th><th>sex</th><th>VL Leading to DR</th><th>Treatment Line at Sample collection</th><th>Drugs</th><th>Adherence (%)</th><th>Risk score (points)</th><th>DR-test eligibility</th><th>ML estimate (%) · research</th><th>Time to failure</th><th /></tr></thead><tbody>{patients.map(patient => <tr key={patient.id}>
     {id(patient)}
     <td>{recordFields[patient.id]?.['Age(yrs)']??patient.age??'—'}</td><td>{recordFields[patient.id]?.sex||patient.sex||'—'}</td>
     <td>{patient.viral_load == null ? '—' : Number(patient.viral_load).toLocaleString()}</td>
@@ -41,7 +41,7 @@ export default function PatientTable({ patients, tab = 'overview', datasetView =
     <td><EligibilityBadge patient={patient} /></td>
     <td>{patient.risk?.ml == null ? '—' : <Badge>{Math.round(patient.risk.ml * 100)}%</Badge>}</td>
     <td>{Array.isArray(patient.ttf) ? `${patient.ttf[0].toFixed(0)} months` : '—'}</td>
-    <td><Link className="text-link" to={`/patients/${patient.id}?tab=risk`}>Open →</Link></td>
+    <td><Link className="text-link" to={`/patients/${patient.id}?tab=risk`}>View assessment →</Link></td>
   </tr>)}</tbody></table>{empty}</div>;
   // Laboratory: only sample and result variables.
   const cleanMutations = text => [...new Set(String(text || '').split(/[;,•]/).map(t => t.replace(/\(\d+(\.\d+)?%\)/g, '').trim()).filter(t => t && !/^none$/i.test(t)))].join(', ');
